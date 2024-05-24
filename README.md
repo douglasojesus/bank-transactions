@@ -1,6 +1,6 @@
 <div align="center">
 
-# Transações Bancárias Distribuidas
+# Transações Bancárias Distribuidas 🏦
 
 </div>
 
