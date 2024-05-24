@@ -40,3 +40,8 @@ Desenvolver um sistema de transações bancárias distribuídas que permita a cr
 - Integridade das Transações: Implementar mecanismos que garantam que uma mesma quantia de dinheiro não seja gasta mais de uma vez (prevenção de duplo gasto).
 - Compatibilidade e Interoperabilidade: Garantir que diferentes bancos, possivelmente utilizando sistemas heterogêneos, possam se comunicar e realizar transações de forma eficaz.
 - Monitoramento e Manutenção: Implementar sistemas de monitoramento e manutenção para garantir a operação contínua e eficiente do sistema.
+
+# Componentes da Arquitetura:
+<p align="center">
+  <img src="docs/images/components_architecture.png" alt="Figura 1.">
+</p>
