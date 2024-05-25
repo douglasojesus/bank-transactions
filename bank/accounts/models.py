@@ -1,17 +1,18 @@
 from django.db import models
-from django.contrib.auth.models import AbstractUser # Importar AbstractUser
+from django.contrib.auth.models import User
 
-class Client(models.Model, AbstractUser):
-    # Fields in User: password, username, first_name, last_name, email.
-    _balance = models.DecimalField()
+class Client(User):
+    # AbstractUser já inclui os campos: password, username, first_name, last_name, email
+    balance = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+
 
     def __str__(self):
-        return self.first_name + self.last_name
+        return f"{self.first_name} {self.last_name}"
     
     def get_saldo(self):
-        return self._balance
+        return self.balance
 
     def receive_transaction(self, value):
-        self._balance += value
+        self.balance += value
+        self.save()
         return True
-    
