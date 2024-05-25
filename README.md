@@ -46,11 +46,39 @@ Desenvolver um sistema de transações bancárias distribuídas que permita a cr
   <img src="docs/images/components_architecture.png" alt="Figura 1." width=450>
 </p>
 
+# Conexão:
+- Cliente (via interface) se comunica com o banco (servidor).
+- Banco (através da requisição do cliente) se comunica com outros bancos.
+- Banco (através da requisição de outro banco, vinda de outro cliente) gerencia entradas para algum cliente interno.
+
+Exemplo:
+
+Fulano é do banco UEFSBank.
+Ciclano é do banco DEXABank.
+
+Fulano decide transferir R$50,00 para Ciclano(DEXABank):
+
+Linha de acontecimentos:
+
+1) Fulano, através da interface web, solicita transferir R$50,00 via requisição web. 
+2) UEFSBank recebe, através de sua rota, a requisição de Fulano. Como Fulano tem R$50,00 em sua conta, o valor pode ser transferido. 
+3) UEFSBank faz uma requisição para DEXABank para verificar se DEXABank tem Ciclano como cliente.
+4) UEFSBank solicita efetuação de transferência para DEXABank.
+5) DEXABank responde UEFSBank o status da transferência (se foi feita com sucesso ou não).
+6) UEFSBank recebe resposta de UEFSBank e registra saída de valor de Fulano caso recebe o status de feita com sucesso.
+7) DEXABank registra entrada de valor de Ciclano.
+8) UEFSBank responde interface de Fulano informando o status da transferência. 
+
+Obs: é necessário garantir que as transações sejam atômicas em 4), 5), 6). 7). Questão: quando DEXABank responder (5), como garantir que UEFSBank recebeu a resposta da requisição? Como DEXABank saberá se a resposta chegou corretamente? É necessária outra requisição de confirmação?
+
 # Rotas:
 
-## Interface:
+## Admin: usada pelo administrador.
+- /admin/
+
+## Interface: usadas pelos clientes.
 - /interface/
 - /interface/signup/
 - /interface/signin/
 
-## Transações interbancárias:
+## Transações interbancárias: usadas entre os bancos.
