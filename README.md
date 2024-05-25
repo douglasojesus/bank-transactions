@@ -43,5 +43,5 @@ Desenvolver um sistema de transações bancárias distribuídas que permita a cr
 
 # Componentes da Arquitetura:
 <p align="center">
-  <img src="docs/images/components_architecture.png" alt="Figura 1." width=300>
+  <img src="docs/images/components_architecture.png" alt="Figura 1." width=450>
 </p>
