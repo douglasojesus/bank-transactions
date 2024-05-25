@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from .forms import FormClient
 
 # Create your views here.
@@ -11,5 +11,11 @@ def sign_in_page(request):
     return render(request, 'sign_in_page.html', context=context)
 
 def sign_up_page(request):
-    context = {}
+    if request.method == 'POST':
+        form = FormClient(request.POST)
+        if form.is_valid():
+            form.save()
+            redirect(home_page)
+    form = FormClient()
+    context = {'form': form}
     return render(request, 'sign_up_page.html', context=context)
