@@ -45,3 +45,12 @@ Desenvolver um sistema de transações bancárias distribuídas que permita a cr
 <p align="center">
   <img src="docs/images/components_architecture.png" alt="Figura 1." width=450>
 </p>
+
+# Rotas:
+
+## Interface:
+- /interface/
+- /interface/signup/
+- /interface/signin/
+
+## Transações interbancárias:
