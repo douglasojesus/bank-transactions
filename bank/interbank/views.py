@@ -1,11 +1,12 @@
 from django.shortcuts import render
 
-# Create your views here.
-def transfer(request, bank):
+# Interface makes request
+# is_authenticated?
+def transfer(request):
     # Implementar view para solicitar requisição a outro banco.
     pass
 
-# Create your views here.
+# Other bank makes request
 def receive(request, bank):
     if request.method == "POST":
         ...
