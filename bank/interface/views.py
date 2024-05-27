@@ -17,7 +17,12 @@ def sign_up_page(request):
         form = FormClient(request.POST)
         if form.is_valid():
             form.save()
-            redirect(home_page)
-    form = FormClient()
+            return redirect('home_page')  # Redireciona para a página inicial após salvar com sucesso
+    else:
+        form = FormClient()
     context = {'form': form}
     return render(request, 'sign_up_page.html', context=context)
+
+# is_athenticated?
+def my_account(request):
+    pass

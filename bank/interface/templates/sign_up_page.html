@@ -10,26 +10,8 @@
     <h1>You are at sign up page.</h1>
     <form method="post">
         {% csrf_token %}
-        <h3>Username: </h3> {{ form.username }}
-        {{ form.username.errors }}
-
-        <h3>Password: </h3>
-        {{ form.password }}
-        {{ form.password.errors }}
-
-        <h3>First name: </h3>
-        {{ form.first_name }}
-        {{ form.first_name.errors }}
-
-        <h3>Last name: </h3>
-        {{ form.last_name }}
-        {{ form.last_name.errors }}
-
-        <h3>Email: </h3>
-        {{ form.email }}
-        {{ form.email.errors }}
-        <br>
-        <br>
+        {{ form.as_p }}
+        
         <button type="submit">SIGN UP</button>
     </form>
 
