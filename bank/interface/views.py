@@ -6,10 +6,12 @@ def home_page(request):
     context = {}
     return render(request, 'home_page.html', context=context)
 
+# User sign in page
 def sign_in_page(request):
     context = {}
     return render(request, 'sign_in_page.html', context=context)
 
+# User sign up page
 def sign_up_page(request):
     if request.method == 'POST':
         form = FormClient(request.POST)
