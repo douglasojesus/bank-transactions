@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login
+from django.contrib import messages
 from django.http import HttpResponse
 from .forms import FormCreateClient, FormLoginClient
 
@@ -18,12 +19,14 @@ def sign_in_page(request):
             user = authenticate(username=username, password=password) 
             if user:
                 login(request, user)
-                return HttpResponse("Logado com sucesso!")
+                return redirect('my_account')
             else:
-                return HttpResponse("Credenciais incorretas.")
+                # Isso adiciona a mensagem à lista de mensagens do request atual.
+                messages.error(request, "Tente novamente. Credenciais incorretas.")
     else:
         form = FormLoginClient()
     context = {'form': form}
+    # A message é automaticamente incluída no contexto do template, mesmo que não seja passada explicitamente. 
     return render(request, 'sign_in_page.html', context=context)
 
 # User sign up page
@@ -40,4 +43,7 @@ def sign_up_page(request):
 
 # is_athenticated?
 def my_account(request):
-    pass
+    if (not(request.user.is_authenticated)):
+        return redirect('sign_in_page')
+    else: 
+        return HttpResponse("Logado com sucesso!")

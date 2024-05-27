@@ -6,11 +6,21 @@
     <title>Sign In Page</title>
 </head>
 <body>
+
     <h1>You are at sign in page.</h1>
+    
+    {% if messages %}
+        <div class="alert alert-danger">
+            {% for message in messages %}
+                <strong>{{ message }}</strong>
+            {% endfor %}
+        </div>
+    {% endif %}
+    
     <form method="post">
         {% csrf_token %}
         {{ form.as_p }}
-        <button type="submit">SIGN UP</button>
+        <button type="submit">Sign In</button>
     </form>
 
 </body>
