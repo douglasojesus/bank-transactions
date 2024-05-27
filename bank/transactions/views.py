@@ -3,7 +3,10 @@ from accounts. models import Client # This bank client
 from django.http import HttpResponse
 import requests
 
+# Implementar a API aqui.
+
 # Arquivo responsável por lidar com a comunicação entre bancos. Requisições recebidas de outros bancos e requisições a serem feitas para outros bancos.
+
 
 # Interface makes request
 # is_authenticated?
