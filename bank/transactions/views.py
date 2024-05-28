@@ -1,10 +1,9 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import redirect
 from accounts.models import Client  # Este cliente do banco
 from django.http import HttpResponse, JsonResponse
 import requests
 from django.db import transaction
 from django.views.decorators.csrf import csrf_exempt 
-from django.core.serializers import serialize
 from decimal import Decimal
 
 # Arquivo responsável por lidar com a comunicação entre bancos.

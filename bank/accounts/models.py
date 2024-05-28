@@ -1,18 +1,39 @@
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
-from django.contrib.auth.models import User
 
-class Client(User):
-    # AbstractUser já inclui os campos: password, username, first_name, last_name, email
-    balance = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
-    blocked_balance = models.DecimalField(default=0.0)  # Novo campo para saldo bloqueado
+class ClientManager(BaseUserManager):
+    def create_user(self, first_name, last_name, email, username, password=None, saldo=0):
+        if not email:
+            raise ValueError('Usuário precisa de um email')
 
-    def __str__(self):
-        return f"{self.first_name} {self.last_name}"
+        email = self.normalize_email(email)
+        user = self.model(first_name=first_name, last_name=last_name, email=email, username=username, saldo=saldo)
+
+        user.set_password(password)
+        user.save()
+
+        return user
+
+class Client(AbstractBaseUser, PermissionsMixin):
+    first_name = models.CharField(max_length=50)
+    last_name = models.CharField(max_length=50)
+    email = models.EmailField('Email', unique=True)
+    username = models.CharField(max_length=255)
+    balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    blocked_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0.0) 
+    is_staff = models.BooleanField('Staff', default=False)
+    is_active = models.BooleanField('Ativo', default=True)
+
+    objects = ClientManager()
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['username']
+
+    def get_full_name(self):
+        return self.username
+
+    def get_short_name(self):
+        return self.username
     
-    def get_saldo(self):
-        return self.balance
-
-    def receive_transaction(self, value):
-        self.balance += value
-        self.save()
-        return True
+    def __str__(self):
+        return self.username

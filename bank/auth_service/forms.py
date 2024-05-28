@@ -4,7 +4,8 @@ from accounts.models import Client
 class FormCreateClient(forms.ModelForm):
     class Meta:
         model = Client
-        fields = ("first_name", "last_name", "username", "email", "password")
+        fields = ['first_name', 'last_name', 'email', 'username', 'password']
+        
 
     def clean_username(self):
         username = self.cleaned_data.get('username')
@@ -15,3 +16,5 @@ class FormCreateClient(forms.ModelForm):
 class FormLoginClient(forms.Form):
     username = forms.CharField()
     password = forms.CharField(widget=forms.PasswordInput)
+
+

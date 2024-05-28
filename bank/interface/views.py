@@ -1,5 +1,8 @@
 from django.shortcuts import render, redirect
 from django.http import HttpResponse
+from .forms import TransferForm
+from transactions.views import transfer
+from accounts.models import Client
 
 # Create your views here.
 def home_page(request):
@@ -17,6 +20,25 @@ def transaction_page(request):
     if (not(request.user.is_authenticated)):
         return redirect('sign_in_page')
     else:
-        # Vai exibir as opções de botões: transferir, efetuar pagamento, depositar.
-        # Quando usuário interagir, solicitando o que deseja fazer, será redirecionado para o app transactions.
-        pass
+        user = Client.objects.filter(username=request.user.username).first()
+        for x in Client.objects.all():
+            print("meu usuario: ", x)
+        print( "o request.user: ",request.user)
+        print( "o request.user.username: ",request.user.username)
+        print('my bank account: ', Client.objects.select_for_update().get(username=request.user))  
+        if request.method == 'POST':
+            form = TransferForm(request.POST)
+            if form.is_valid():
+                value_to_transfer = form.cleaned_data['value_to_transfer']
+                bank_to_transfer = form.cleaned_data['bank_to_transfer']
+                client_to_transfer = form.cleaned_data['client_to_transfer']
+
+                # Redireciona para a função de transferência existente em transactions
+                response = transfer(request, value_to_transfer, bank_to_transfer, client_to_transfer)
+                return response
+        else:
+            form = TransferForm()
+
+        return render(request, 'transaction_page.html', {'form': form, 'user': user})
+
+
