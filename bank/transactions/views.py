@@ -21,8 +21,9 @@ def transfer(request, value_to_transfer, bank_to_transfer, client_to_transfer):
             if bank_client.balance < value_to_transfer:
                 return HttpResponse("Saldo insuficiente na conta de origem", status=400)
 
-            # Primeira fase: solicitação de commit
             url_request = f'{bank_to_transfer}:8000/transaction/receive/{client_to_transfer}/'
+
+            # Primeira fase: solicitação de commit
             response = requests.post(url_request, data={'status': 'INIT', 'value': value_to_transfer})
 
             if response.status_code != 200 or response.json().get('status') == 'ABORT':
@@ -34,8 +35,9 @@ def transfer(request, value_to_transfer, bank_to_transfer, client_to_transfer):
 
             # Solicita commit no banco receptor
             response = requests.post(url_request, data={'commit': 'True', 'value': value_to_transfer})
+
             if response.status_code != 200 or response.json().get('status') != 'COMMITTED':
-                raise Exception(f"Falha ao confirmar a transação no Banco {bank_to_transfer}")
+                raise Exception(f"Falha ao confirmar a transação no Banco {bank_to_transfer}.")
 
             return HttpResponse("Transferido com sucesso.")
 
@@ -44,7 +46,8 @@ def transfer(request, value_to_transfer, bank_to_transfer, client_to_transfer):
 def receive(request, client_to_receive):
     if request.method == "POST":
         value_to_receive = request.POST.get('value')
-        commit = request.POST.get('commit', 'False') == 'True'  # Tratar corretamente como booleano
+        # Se não houver 'commit', o default é 'False'.
+        commit = request.POST.get('commit', 'False') == 'True'
 
         with transaction.atomic():
             try:
