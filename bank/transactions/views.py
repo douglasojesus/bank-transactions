@@ -5,6 +5,7 @@ import requests
 from django.db import transaction
 from django.views.decorators.csrf import csrf_exempt 
 from django.core.serializers import serialize
+from decimal import Decimal
 
 # Arquivo responsável por lidar com a comunicação entre bancos.
 # Requisições recebidas de outros bancos e requisições a serem feitas para outros bancos.
@@ -43,10 +44,6 @@ def transfer(request, value_to_transfer, bank_to_transfer, client_to_transfer):
                     raise Exception(f"Falha ao confirmar a transação no Banco {bank_to_transfer} e falha ao reverter a operação.")
                 raise Exception(f"Falha ao confirmar a transação no Banco {bank_to_transfer}.")
             
-            # Confirma transação 
-            # Diz para o banco B que pode liberar o saldo bloqueado depois de verificar o rollback
-            response = requests.post(url_request, data={'confirm': 'True', 'value': value_to_transfer})
-
             return HttpResponse("Transferido com sucesso.")
 
 @csrf_exempt
@@ -55,7 +52,6 @@ def receive(request, client_to_receive):
         value_to_receive = request.POST.get('value')
         commit = request.POST.get('commit', 'False') == 'True'
         rollback = request.POST.get('rollback', 'False') == 'True'
-        confirm = request.POST.get('confirm', 'False') == 'True'
 
         with transaction.atomic():
             try:
@@ -63,24 +59,20 @@ def receive(request, client_to_receive):
             except Client.DoesNotExist:
                 return JsonResponse({'status': 'ABORT'})
 
+            if commit:
+                bank_client.balance += Decimal(value_to_receive)
+                bank_client.blocked_balance -= Decimal(value_to_receive)
+
+                bank_client.save()
+                return JsonResponse({'status': 'COMMITTED'})
+
             if rollback:
-                bank_client.blocked_balance -= float(value_to_receive)
+                bank_client.balance -= Decimal(value_to_receive)
                 bank_client.save()
                 return JsonResponse({'status': 'ROLLED BACK'})
 
-            if commit:
-                bank_client.blocked_balance += float(value_to_receive)
-                bank_client.save()
-                return JsonResponse({'status': 'COMMITTED'})
-            
-            if confirm:
-                bank_client.balance += bank_client.blocked_balance
-                bank_client.blocked_balance -= bank_client.blocked_balance
-                bank_client.save()
-                return JsonResponse({'status': 'CONFIRMED'})
-
             # Primeira fase: bloquear o valor
-            bank_client.blocked_balance += float(value_to_receive)
+            bank_client.blocked_balance += Decimal(value_to_receive)
             bank_client.save()
             return JsonResponse({'status': 'READY'})
 
