@@ -71,6 +71,39 @@ Linha de acontecimentos:
 
 Obs: é necessário garantir que as transações sejam atômicas em 4), 5), 6). 7). Questão: quando DEXABank responder (5), como garantir que UEFSBank recebeu a resposta da requisição? Como DEXABank saberá se a resposta chegou corretamente? É necessária outra requisição de confirmação?
 
+# Estratégia de transação atômica?:
+
+Transação ideal:
+
+1) Banco A inicia a transação e marca o status da transação como "pending".
+2) Banco B processa a solicitação e retorna uma confirmação que inclui um ID de transação. Transação em B fica "pending".
+3) Banco A verifica o status da confirmação e marca o status de transação como "transfered". Valor sai da conta.
+4) Banco A realiza nova requisição informando que o valor saiu da conta. Estado "transfered".
+5) Banco B recebe requisição e responde "received". Valor entra em conta.
+
+Possíveis erros de transação:
+
+1) Banco A inicia a transação e marca o status da transação como "pending".
+  - Se Banco B não receber a requisição, transação é encerrada. Banco A e Banco B cancelam.
+
+2) Banco B processa a solicitação e retorna uma confirmação que inclui um ID de transação. Transação em B fica "pending".
+  - Se Banco A não receber a resposta de B com o ID de transação, transação é encerrada. Banco A e Banco B cancelam.
+
+3) Banco A verifica o status da confirmação e marca o status de transação como "transfered". Valor sai da conta.
+  - Se Banco B não receber a requisição, transação é encerrada. Banco A e Banco B cancelam.
+
+4) Banco A realiza nova requisição informando que o valor saiu da conta. Estado "transfered".
+  - Se Banco B não response, significa que não recebeu a requisição. Banco A e B cancelam.
+
+5) Banco B recebe requisição e responde "received". Valor entra em conta.
+
+
+Transação
+
+- Banco B processa a solicitação e retorna uma confirmação com o status "received". Valor entra na conta.
+- Banco A conclui transação. Se não receber 
+- Banco A continua a consultar o status da transação até receber uma resposta definitiva de Banco B, garantindo que a transação seja finalizada de maneira consistente.
+
 # Rotas:
 
 ## Admin: usada pelo administrador.
