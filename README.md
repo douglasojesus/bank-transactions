@@ -92,6 +92,8 @@ Quando um usuário tenta realizar uma transferência, a linha da conta é bloque
 
 Quando um usuário de uma conta conjunta inicia uma transferência, a linha da conta conjunta é bloqueada. Se outro usuário tentar realizar uma transação enquanto a linha está bloqueada, a transação será colocada em espera até que o bloqueio seja liberado.
 
+Implementando o bloqueio do valor transferido até a confirmação final, podemos evitar inconsistências causadas por transações concorrentes em contas conjuntas. Esta abordagem garante que o valor transferido só estará disponível para uso após a confirmação de que a transação foi concluída com sucesso em ambos os bancos.
+
 # Rotas:
 
 ## Admin: usada pelo administrador.
@@ -103,6 +105,24 @@ Quando um usuário de uma conta conjunta inicia uma transferência, a linha da c
 - /interface/signin/
 
 ## Transações interbancárias: usadas entre os bancos.
+
+### Transferência
+1) Autenticação do Usuário: Verifica se o usuário está autenticado. Se não estiver, redireciona para a página de login.
+2) Transação Atômica: Inicia uma transação atômica para garantir a consistência dos dados.
+3) Captura do Cliente: Obtém o cliente atual do banco e bloqueia a linha correspondente para evitar condições de corrida.
+4) Verificação de Saldo: Verifica se o cliente tem saldo suficiente. Se não, retorna um erro.
+5) Solicitação de Commit (Primeira Fase): Envia uma solicitação ao banco de destino para iniciar a transação.
+6) Processamento do Commit (Segunda Fase): Se a resposta da primeira fase for bem-sucedida, deduz o valor do saldo do cliente e salva.
+7) Confirmação do Commit: Envia uma solicitação de commit ao banco de destino. Se a confirmação falhar, tenta reverter a transação.
+8) Confirmação da Transação: Após a confirmação bem-sucedida, envia uma solicitação para liberar o saldo bloqueado no banco de destino.
+
+### Recebimento
+1) Verificação do Método: Verifica se a requisição é do tipo POST.
+2) Captura do Cliente: Obtém o cliente do banco de destino e bloqueia a linha correspondente.
+3) Commit: Se a solicitação for de commit, adiciona o valor ao saldo bloqueado e salva.
+4) Rollback: Se a solicitação for de rollback, deduz o valor do saldo bloqueado e salva.
+5) Confirmação: Se a solicitação for de confirmação, transfere o valor do saldo bloqueado para o saldo disponível e ajusta o saldo bloqueado.
+6) Bloqueio de Valor (Primeira Fase): Inicialmente, adiciona o valor ao saldo bloqueado e salva.
 
 
 # Bibliografia (need organization):

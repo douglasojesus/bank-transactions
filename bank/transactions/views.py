@@ -42,6 +42,10 @@ def transfer(request, value_to_transfer, bank_to_transfer, client_to_transfer):
                 if rollback_response.status_code != 200 or rollback_response.json().get('status') != 'ROLLED BACK':
                     raise Exception(f"Falha ao confirmar a transação no Banco {bank_to_transfer} e falha ao reverter a operação.")
                 raise Exception(f"Falha ao confirmar a transação no Banco {bank_to_transfer}.")
+            
+            # Confirma transação 
+            # Diz para o banco B que pode liberar o saldo bloqueado depois de verificar o rollback
+            response = requests.post(url_request, data={'confirm': 'True', 'value': value_to_transfer})
 
             return HttpResponse("Transferido com sucesso.")
 
@@ -51,6 +55,7 @@ def receive(request, client_to_receive):
         value_to_receive = request.POST.get('value')
         commit = request.POST.get('commit', 'False') == 'True'
         rollback = request.POST.get('rollback', 'False') == 'True'
+        confirm = request.POST.get('confirm', 'False') == 'True'
 
         with transaction.atomic():
             try:
@@ -59,16 +64,24 @@ def receive(request, client_to_receive):
                 return JsonResponse({'status': 'ABORT'})
 
             if rollback:
-                bank_client.balance -= float(value_to_receive)
+                bank_client.blocked_balance -= float(value_to_receive)
                 bank_client.save()
                 return JsonResponse({'status': 'ROLLED BACK'})
 
             if commit:
-                bank_client.balance += float(value_to_receive)
+                bank_client.blocked_balance += float(value_to_receive)
                 bank_client.save()
                 return JsonResponse({'status': 'COMMITTED'})
+            
+            if confirm:
+                bank_client.balance += bank_client.blocked_balance
+                bank_client.blocked_balance -= bank_client.blocked_balance
+                bank_client.save()
+                return JsonResponse({'status': 'CONFIRMED'})
 
+            # Primeira fase: bloquear o valor
+            bank_client.blocked_balance += float(value_to_receive)
+            bank_client.save()
             return JsonResponse({'status': 'READY'})
 
     return JsonResponse({'message': 'Você precisa enviar uma requisição POST'}, status=400)
-
