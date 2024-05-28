@@ -77,6 +77,11 @@ Obs: é necessário garantir que as transações sejam atômicas em 4), 5), 6). 
 
 Para implementar o algoritmo de Two-phase Commit (2PC) com Django para garantir uma transação atômica entre dois bancos, é utilizado o transaction.atomic(). Isso garante que, se houver algum erro, os dados dos bancos não serão alterados.
 
+A primeira função, transfer, é responsável por iniciar a transferência de um valor de um banco para outro. Primeiramente, verifica se o usuário está autenticado. Caso contrário, redireciona para a página de login. Em seguida, utilizando uma transação atômica, obtém os detalhes do cliente do banco atual, garantindo que a linha do cliente esteja bloqueada durante a transação para evitar condições de corrida. Se o saldo do cliente for insuficiente, retorna uma resposta indicando saldo insuficiente. A função então faz uma solicitação POST ao banco destinatário para iniciar a transferência (primeira fase do 2PC). Se o banco destinatário responder com um status de 'ABORT', a operação é cancelada. Caso contrário, o saldo do cliente é debitado e outra solicitação POST é enviada ao banco destinatário para confirmar a transação (segunda fase do 2PC). Se a confirmação falhar, uma exceção é lançada. Se tudo correr bem, a função retorna uma resposta indicando sucesso.
+
+A segunda função, receive, é responsável por lidar com as solicitações recebidas de outros bancos. Ela é decorada com @csrf_exempt para desativar a proteção CSRF para esta visão específica, permitindo que requisições POST sejam aceitas de fontes externas. Quando uma requisição POST é recebida, ela obtém o valor a ser recebido e verifica se é uma solicitação de commit. Utilizando uma transação atômica, tenta obter os detalhes do cliente destinatário, bloqueando a linha do cliente durante a transação. Se o cliente não existir, retorna uma resposta indicando 'ABORT'. Se for uma solicitação de commit, adiciona o valor ao saldo do cliente e retorna uma resposta indicando 'COMMITTED'. Se for uma solicitação de preparação (primeira fase), retorna uma resposta indicando 'READY'. Se a requisição não for um POST, retorna uma mensagem de erro.
+
+Esse código garante que as transferências entre bancos sejam executadas de forma segura e consistente, utilizando o protocolo de commit de duas fases para coordenar a transação entre os bancos e assegurar que ambas as partes concordem em prosseguir antes de qualquer alteração ser confirmada.
 
 # Rotas:
 
@@ -89,3 +94,9 @@ Para implementar o algoritmo de Two-phase Commit (2PC) com Django para garantir 
 - /interface/signin/
 
 ## Transações interbancárias: usadas entre os bancos.
+
+
+# Bibliografia (need organization):
+
+https://docs.djangoproject.com/pt-br/5.0/topics/db/transactions/
+

@@ -36,6 +36,8 @@ def transfer(request, value_to_transfer, bank_to_transfer, client_to_transfer):
             # Solicita commit no banco receptor
             response = requests.post(url_request, data={'commit': 'True', 'value': value_to_transfer})
 
+            # Se houver um erro AQUI, o que acontece? O valor do bank_client do banco A volta para a conta, mas e o valor do banco B? Neste momento, ele já acrescentou o valor na conta B. Vai haver duplicata?
+
             if response.status_code != 200 or response.json().get('status') != 'COMMITTED':
                 raise Exception(f"Falha ao confirmar a transação no Banco {bank_to_transfer}.")
 
