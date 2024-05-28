@@ -46,6 +46,7 @@ def transfer(request, value_to_transfer, bank_to_transfer, client_to_transfer):
             
             return HttpResponse("Transferido com sucesso.")
 
+# Permite que a view receive aceite requisições POST sem a verificação do token CSRF
 @csrf_exempt
 def receive(request, client_to_receive):
     if request.method == "POST":
