@@ -36,20 +36,21 @@ def transfer(request, value_to_transfer, bank_to_transfer, client_to_transfer):
             # Solicita commit no banco receptor
             response = requests.post(url_request, data={'commit': 'True', 'value': value_to_transfer})
 
-            # Se houver um erro AQUI, o que acontece? O valor do bank_client do banco A volta para a conta, mas e o valor do banco B? Neste momento, ele já acrescentou o valor na conta B. Vai haver duplicata?
-
             if response.status_code != 200 or response.json().get('status') != 'COMMITTED':
+                # Tentar reverter a transação no banco receptor
+                rollback_response = requests.post(url_request, data={'rollback': 'True', 'value': value_to_transfer})
+                if rollback_response.status_code != 200 or rollback_response.json().get('status') != 'ROLLED BACK':
+                    raise Exception(f"Falha ao confirmar a transação no Banco {bank_to_transfer} e falha ao reverter a operação.")
                 raise Exception(f"Falha ao confirmar a transação no Banco {bank_to_transfer}.")
 
             return HttpResponse("Transferido com sucesso.")
 
-# Banco receptor faz a requisição
 @csrf_exempt
 def receive(request, client_to_receive):
     if request.method == "POST":
         value_to_receive = request.POST.get('value')
-        # Se não houver 'commit', o default é 'False'.
         commit = request.POST.get('commit', 'False') == 'True'
+        rollback = request.POST.get('rollback', 'False') == 'True'
 
         with transaction.atomic():
             try:
@@ -57,12 +58,17 @@ def receive(request, client_to_receive):
             except Client.DoesNotExist:
                 return JsonResponse({'status': 'ABORT'})
 
+            if rollback:
+                bank_client.balance -= float(value_to_receive)
+                bank_client.save()
+                return JsonResponse({'status': 'ROLLED BACK'})
+
             if commit:
                 bank_client.balance += float(value_to_receive)
                 bank_client.save()
                 return JsonResponse({'status': 'COMMITTED'})
 
-            # Resposta de primeira fase
             return JsonResponse({'status': 'READY'})
 
     return JsonResponse({'message': 'Você precisa enviar uma requisição POST'}, status=400)
+

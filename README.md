@@ -83,6 +83,15 @@ A segunda função, receive, é responsável por lidar com as solicitações rec
 
 Esse código garante que as transferências entre bancos sejam executadas de forma segura e consistente, utilizando o protocolo de commit de duas fases para coordenar a transação entre os bancos e assegurar que ambas as partes concordem em prosseguir antes de qualquer alteração ser confirmada.
 
+Rollback: Introduzi um rollback na função receive que permite reverter a transação caso a confirmação falhe. Se a confirmação falhar, uma solicitação de rollback será enviada ao banco receptor para remover o valor creditado.
+
+Confirmação de Rollback: Se o rollback também falhar, uma exceção será levantada, alertando sobre a falha na confirmação e na reversão, permitindo que um administrador intervenha manualmente para resolver o problema.
+
+A cláusula select_for_update() bloqueia as linhas do banco de dados que são selecionadas até o final da transação. Isso garante que outras transações que tentem acessar essas linhas tenham que esperar até que o bloqueio seja liberado.
+Quando um usuário tenta realizar uma transferência, a linha da conta é bloqueada até que a transação seja concluída, evitando que outro usuário faça uma alteração simultânea.
+
+Quando um usuário de uma conta conjunta inicia uma transferência, a linha da conta conjunta é bloqueada. Se outro usuário tentar realizar uma transação enquanto a linha está bloqueada, a transação será colocada em espera até que o bloqueio seja liberado.
+
 # Rotas:
 
 ## Admin: usada pelo administrador.
