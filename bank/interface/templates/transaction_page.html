@@ -3,35 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transações Bancárias</title>
+    <title>Transações Bancárias - Tio Patinhas Bank</title>
     {% load static %}
-    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'css/styletransactionpage.css' %}">
 </head>
 <body>
     <div class="container">
         <h1>Transações Bancárias</h1>
-        <h2>Olá, {{ user.username }}. Seu saldo atual é de: {{ user.balance }}</h2>
+        <h2>Olá, {{ user.first_name }} {{ user.last_name }}. </h2>
+        <h2>Seu saldo atual é de: R$ {{ user.balance }}</h2>
         <form method="POST" action="{% url 'transaction_page' %}">
             {% csrf_token %}
             <label for="action">Selecione a ação:</label>
             <select id="action" name="action" onchange="toggleRecipientFields(this.value)">
-                <option value="transfer">Transferir</option>
-                <option value="payment">Efetuar Pagamento</option>
-                <option value="deposit">Depositar</option>
+                <option value="deposit">Deposit</option>
+                <option value="transfer">Transer</option>
+                <option value="payment">Pay</option>
             </select>
 
             <label for="value">Valor:</label>
             <input type="number" step="0.01" id="value" name="value" required>
 
             <div id="recipient-fields" style="display: none;">
-                <label for="bank_to_transfer">Banco Destinatário:</label>
+                <label for="bank_to_transfer">Bank to send:</label>
                 <input type="text" id="bank_to_transfer" name="bank_to_transfer">
-
-                <label for="recipient">Destinatário:</label>
+                <br>
+                <label for="recipient">Send to:</label>
                 <input type="text" id="recipient" name="recipient">
             </div>
 
-            <button type="submit">Enviar</button>
+            <button type="submit">Transfer</button>
         </form>
     </div>
     <script>

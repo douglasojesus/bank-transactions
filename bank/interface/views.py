@@ -14,14 +14,14 @@ def my_account_page(request):
     if (not(request.user.is_authenticated)):
         return redirect('sign_in_page')
     else: 
-        return HttpResponse("Logado com sucesso!")
+        return render(request, 'account_page.html', {'user': request.user})
     
 def transaction_page(request):
     if (not(request.user.is_authenticated)):
         return redirect('sign_in_page')
     else:
         user = Client.objects.filter(username=request.user.username).first()
-         
+
         if request.method == 'POST':
             form = TransferForm(request.POST)
             if form.is_valid():

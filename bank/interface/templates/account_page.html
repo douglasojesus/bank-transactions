@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conta do Cliente - Tio Patinhas Bank</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/styleaccountpage.css' %}">
+</head>
+<body>
+
+<div class="container">
+    <div class="header-buttons">
+        <a href="{% url 'transaction_page' %}" class="button">Transferir</a>
+        <a href="{% url 'logout' %}" class="button">Logout</a>
+    </div>
+
+    <h1>Dados da Conta do Cliente</h1>
+    
+    <p><strong>Primeiro Nome:</strong> {{ user.first_name }}</p>
+    <p><strong>Último Nome:</strong> {{ user.last_name }}</p>
+    <p><strong>Email:</strong> {{ user.email }}</p>
+    <p><strong>Nome de Usuário:</strong> {{ user.username }}</p>
+    
+    <div class="balance-container">
+        <div class="balance">
+            <strong>Saldo:</strong> R$ {{ user.balance }}
+        </div>
+        <div class="blocked-balance">
+            <strong>Saldo Bloqueado:</strong> R$ {{ user.blocked_balance }}
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
