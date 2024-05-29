@@ -5,6 +5,7 @@ import requests
 from django.db import transaction
 from django.views.decorators.csrf import csrf_exempt 
 from decimal import Decimal
+from django.contrib import messages
 
 # Arquivo responsável por lidar com a comunicação entre bancos.
 # Requisições recebidas de outros bancos e requisições a serem feitas para outros bancos.
@@ -19,7 +20,8 @@ def transfer(request, value_to_transfer, bank_to_transfer, client_to_transfer):
             bank_client = Client.objects.select_for_update().get(username=request.user)  
 
             if bank_client.balance < value_to_transfer:
-                return HttpResponse("Saldo insuficiente na conta de origem", status=400)
+                messages.error(request, "Saldo insuficiente na conta de origem.")
+                return redirect('transaction_page')
 
             url_request = f'{bank_to_transfer}:8000/transaction/receive/{client_to_transfer}/'
 
