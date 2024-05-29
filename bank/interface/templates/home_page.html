@@ -3,11 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Home Page</title>
+    <title>Home Page - Tio Patinhas Bank</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/stylehomepage.css' %}">
 </head>
 <body>
-    <center>
-        <h1>You are at home page.</h1>
-    </center>
+
+<div class="container">
+    <h1>Welcome to Tio Patinhas Bank</h1>
+    
+    {% if user.is_authenticated %}
+        <p>Hello, {{ user.first_name }} {{ user.last_name }}!</p>
+        <a href="{% url 'my_account_page' %}" class="button">Go to Your Account</a>
+    {% else %}
+        <p>Please <a href="{% url 'sign_in_page' %}">sign in</a> to access your account information.</p>
+    {% endif %}
+</div>
+
 </body>
 </html>
