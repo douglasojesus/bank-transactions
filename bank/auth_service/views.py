@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-from django.contrib.auth import login, get_user_model
+from django.contrib.auth import login, get_user_model, logout as auth_logout
 from django.contrib import messages
 from django.http import HttpResponse
 from .forms import FormCreateClient, FormLoginClient
@@ -26,6 +26,10 @@ def sign_in_page(request):
     context = {'form': form}
     # A message é automaticamente incluída no contexto do template, mesmo que não seja passada explicitamente. 
     return render(request, 'sign_in_page.html', context=context)
+
+def logout_page(request):
+    auth_logout(request)
+    return redirect('home_page')
 
 # User sign up page
 def sign_up_page(request):
