@@ -21,11 +21,7 @@ def transaction_page(request):
         return redirect('sign_in_page')
     else:
         user = Client.objects.filter(username=request.user.username).first()
-        for x in Client.objects.all():
-            print("meu usuario: ", x)
-        print( "o request.user: ",request.user)
-        print( "o request.user.username: ",request.user.username)
-        print('my bank account: ', Client.objects.select_for_update().get(username=request.user))  
+         
         if request.method == 'POST':
             form = TransferForm(request.POST)
             if form.is_valid():

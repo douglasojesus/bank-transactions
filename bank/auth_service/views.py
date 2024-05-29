@@ -12,10 +12,8 @@ def sign_in_page(request):
         if form.is_valid():
             username = form.cleaned_data['username']
             password = form.cleaned_data['password']
-            print(username, password)
             auth = AuthBackEnd()
             user = auth.authenticate(username=username, password=password) 
-            print(user)
             
             if user:
                 login(request, user)

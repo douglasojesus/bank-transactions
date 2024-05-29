@@ -2,12 +2,12 @@ from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, Permis
 from django.db import models
 
 class ClientManager(BaseUserManager):
-    def create_user(self, first_name, last_name, email, username, password=None, saldo=0):
+    def create_user(self, first_name, last_name, email, username, password=None, balance=0):
         if not email:
             raise ValueError('Usuário precisa de um email')
 
         email = self.normalize_email(email)
-        user = self.model(first_name=first_name, last_name=last_name, email=email, username=username, saldo=saldo)
+        user = self.model(first_name=first_name, last_name=last_name, email=email, username=username, balance=balance)
 
         user.set_password(password)
         user.save()
