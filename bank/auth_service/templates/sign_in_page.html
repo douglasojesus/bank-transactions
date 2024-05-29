@@ -4,10 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign In Page</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/stylesignin.css' %}">
 </head>
 <body>
 
-    <h1>You are at sign in page.</h1>
+<div class="container">
+    <h1>Sign In</h1>
     
     {% if messages %}
         <div class="alert alert-danger">
@@ -22,6 +25,10 @@
         {{ form.as_p }}
         <button type="submit">Sign In</button>
     </form>
+</div>
 
 </body>
 </html>
+
+
+
