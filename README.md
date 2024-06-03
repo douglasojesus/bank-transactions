@@ -99,10 +99,18 @@ Implementando o bloqueio do valor transferido até a confirmação final, podemo
 ## Admin: usada pelo administrador.
 - /admin/
 
+## Auth: usadas pelos clientes.
+- /auth/signup/
+- /auth/signin/
+
 ## Interface: usadas pelos clientes.
 - /interface/
-- /interface/signup/
-- /interface/signin/
+- /interface/account/
+- /interface/transfer/
+
+## Transactions: usadas pelos clientes e pelos bancos.
+- /transaction/transfer/
+- /transaction/receive/
 
 ## Transações interbancárias: usadas entre os bancos.
 
