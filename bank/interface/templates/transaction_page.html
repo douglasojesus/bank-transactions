@@ -17,23 +17,26 @@
             {% csrf_token %}
             <label for="choice">Selecione a ação:</label>
             <select id="choice" name="choice" onchange="toggleRecipientFields(this.value)">
-                <option value="deposit">Deposit</option>
-                <option value="transfer">Transfer</option>
-                <option value="payment">Payment</option>
+                <option value="deposit">Depositar</option>
+                <option value="transfer">Transferir</option>
+                <option value="payment">Efetuar pagamento</option>
             </select>
 
             <label for="value_to_transfer">Valor:</label>
             <input type="number" step="0.01" id="value_to_transfer" name="value_to_transfer" required>
 
             <div id="recipient-fields" style="display: none;">
-                <label for="bank_to_transfer">Bank to send:</label>
-                <input type="text" id="bank_to_transfer" name="bank_to_transfer">
+                <label for="ip_to_transfer">Banco de destino (ip):</label>
+                <input type="text" id="ip_to_transfer" name="ip_to_transfer">
                 <br>
-                <label for="client_to_transfer">Send to:</label>
+                <label for="port_to_transfer">Agência de destino (port):</label>
+                <input type="text" id="port_to_transfer" name="port_to_transfer">
+                <br>
+                <label for="client_to_transfer">Cliente de destino (username):</label>
                 <input type="text" id="client_to_transfer" name="client_to_transfer">
             </div>
 
-            <button type="submit">Transfer</button>
+            <button type="submit">Efetuar transação</button>
         </form>
     </div>
     <script>
