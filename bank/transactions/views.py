@@ -60,6 +60,7 @@ def transfer(request, value_to_transfer, bank_to_transfer, client_to_transfer): 
 # Permite que a view receive aceite requisições POST sem a verificação do token CSRF
 @csrf_exempt
 def receive(request):
+    # se for do mesmo banco, o banco de dados pode estar bloqueado this is a bug!
     if request.method == "POST":
         print("recebi a requisição do tipo post")
         client_to_receive = request.POST.get('client')
