@@ -2,6 +2,7 @@ from django.shortcuts import redirect
 from accounts.models import Client  # Este cliente do banco
 from django.http import HttpResponse, JsonResponse
 import requests
+from requests.exceptions import ConnectTimeout
 from django.db import transaction
 from django.views.decorators.csrf import csrf_exempt 
 from decimal import Decimal
@@ -23,10 +24,14 @@ def transfer(request, value_to_transfer, bank_to_transfer, client_to_transfer): 
                 messages.error(request, "Saldo insuficiente na conta de origem.")
                 return redirect('transaction_page')
 
-            url_request = f'{bank_to_transfer[0]}:{bank_to_transfer[1]}/transaction/receive/{client_to_transfer}/'
+            url_request = f'http://{bank_to_transfer[0]}:{bank_to_transfer[1]}/transaction/receive/{client_to_transfer}/'
 
+            try:
             # Primeira fase: solicitação de commit
-            response = requests.post(url_request, data={'status': 'INIT', 'value': value_to_transfer})
+                response = requests.post(url_request, data={'status': 'INIT', 'value': value_to_transfer}, timeout=5)
+            except ConnectTimeout:
+                messages.error(request, f"ConnectTimeout Error: O host {bank_to_transfer[0]} pode estar inacessível ou indisponível. Pode haver um firewall ou configuração de rede que bloqueei a conexão. O serviço na porta {bank_to_transfer[1]} pode não estar em execução ou não estar respondendo. O tempo limite de conexão pode ser muito curto para a rede ou servidor em questão.")
+                return redirect('transaction_page')
 
             if response.status_code != 200 or response.json().get('status') == 'ABORT':
                 return HttpResponse(f"O Banco {bank_to_transfer} precisou abortar a operação.", status=400)

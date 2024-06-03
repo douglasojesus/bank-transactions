@@ -22,7 +22,6 @@ def transaction_page(request):
         return redirect('sign_in_page')
     else:
         user = Client.objects.filter(username=request.user.username).first()
-
         if request.method == 'POST':
             form = TransactionForm(request.POST)
             if form.is_valid(): 
