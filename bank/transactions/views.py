@@ -9,8 +9,8 @@ from django.contrib import messages
 
 # Arquivo responsável por lidar com a comunicação entre bancos.
 # Requisições recebidas de outros bancos e requisições a serem feitas para outros bancos.
-# Interface faz a requisição
-def transfer(request, value_to_transfer, bank_to_transfer, client_to_transfer):
+# Interface faz a requisição.
+def transfer(request, value_to_transfer, bank_to_transfer, client_to_transfer): #bank_to_transfer = (ip, porta)
     if not request.user.is_authenticated:
         return redirect('sign_in_page')
     else:
@@ -23,7 +23,7 @@ def transfer(request, value_to_transfer, bank_to_transfer, client_to_transfer):
                 messages.error(request, "Saldo insuficiente na conta de origem.")
                 return redirect('transaction_page')
 
-            url_request = f'{bank_to_transfer}:8000/transaction/receive/{client_to_transfer}/'
+            url_request = f'{bank_to_transfer[0]}:{bank_to_transfer[1]}/transaction/receive/{client_to_transfer}/'
 
             # Primeira fase: solicitação de commit
             response = requests.post(url_request, data={'status': 'INIT', 'value': value_to_transfer})
