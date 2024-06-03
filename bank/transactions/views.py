@@ -24,11 +24,11 @@ def transfer(request, value_to_transfer, bank_to_transfer, client_to_transfer): 
                 messages.error(request, "Saldo insuficiente na conta de origem.")
                 return redirect('transaction_page')
 
-            url_request = f'http://{bank_to_transfer[0]}:{bank_to_transfer[1]}/transaction/receive/{client_to_transfer}/'
+            url_request = f'http://{bank_to_transfer[0]}:{bank_to_transfer[1]}/transaction/receive/'
 
             try:
             # Primeira fase: solicitação de commit
-                response = requests.post(url_request, data={'status': 'INIT', 'value': value_to_transfer}, timeout=5)
+                response = requests.post(url_request, data={'status': 'INIT', 'value': value_to_transfer, 'client': client_to_transfer}, timeout=5)
             except ConnectTimeout:
                 messages.error(request, f"ConnectTimeout Error: O host {bank_to_transfer[0]} pode estar inacessível ou indisponível. Pode haver um firewall ou configuração de rede que bloqueei a conexão. O serviço na porta {bank_to_transfer[1]} pode não estar em execução ou não estar respondendo. O tempo limite de conexão pode ser muito curto para a rede ou servidor em questão.")
                 return redirect('transaction_page')
@@ -54,8 +54,9 @@ def transfer(request, value_to_transfer, bank_to_transfer, client_to_transfer): 
 
 # Permite que a view receive aceite requisições POST sem a verificação do token CSRF
 @csrf_exempt
-def receive(request, client_to_receive):
+def receive(request):
     if request.method == "POST":
+        client_to_receive = request.POST.get('client')
         value_to_receive = request.POST.get('value')
         commit = request.POST.get('commit', 'False') == 'True'
         rollback = request.POST.get('rollback', 'False') == 'True'

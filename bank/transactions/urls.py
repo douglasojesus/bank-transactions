@@ -3,5 +3,5 @@ from .views import transfer, receive
 
 urlpatterns = [
     path('transfer/', transfer, name='transfer'),
-    path('receive/<str:client_to_receive>/', receive, name='receive'),
+    path('receive/', receive, name='receive'),
 ]
