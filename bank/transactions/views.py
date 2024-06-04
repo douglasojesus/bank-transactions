@@ -1,6 +1,6 @@
 from django.shortcuts import redirect
 from accounts.models import Client  # Este cliente do banco
-from django.http import HttpResponse, JsonResponse
+from django.http import JsonResponse
 import requests
 from requests.exceptions import ConnectTimeout, ReadTimeout
 from django.db import transaction
