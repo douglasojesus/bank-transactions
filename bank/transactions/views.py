@@ -8,6 +8,20 @@ from django.views.decorators.csrf import csrf_exempt
 from decimal import Decimal
 from django.contrib import messages
 
+
+"""
+MUDANÇAS:
+
+- Todos os bancos precisam se conhecer.
+- Um cliente logado em um banco A consegue fazer transferência de suas contas do banco B para banco C.
+- Quando um cliente logado estiver fazendo uma transação, todos os outros bancos precisam estar bloqueados de fazer transação nessa conta.
+- Esse bloqueio pode acontecer por meio de estados. O banco A se comunica com todos os bancos ao mesmo tempo.
+- Se o saldo do cliente A for atualizado no banco A, deve ser enviado uma notificação para todos os bancos atualizarem o valor de A.
+- Vai ter de trabalhar bastante com gerenciamento de estados, onde esse estado é compartilhado entre todos os bancos. 
+
+"""
+
+
 # Arquivo responsável por lidar com a comunicação entre bancos.
 # Requisições recebidas de outros bancos e requisições a serem feitas para outros bancos.
 # Interface faz a requisição.
