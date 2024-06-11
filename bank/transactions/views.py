@@ -7,6 +7,7 @@ from django.db import transaction
 from django.views.decorators.csrf import csrf_exempt 
 from decimal import Decimal
 from django.contrib import messages
+from .models import Bank
 
 
 """
@@ -20,8 +21,10 @@ MUDANÇAS:
 - Vai ter de trabalhar bastante com gerenciamento de estados, onde esse estado é compartilhado entre todos os bancos. 
 
 """
-
-
+def configure():
+    #configurar quem são os bancos conhecidos e se conectar com todos
+    # para um funcionar, todos tem que estar rodando? 
+    
 # Arquivo responsável por lidar com a comunicação entre bancos.
 # Requisições recebidas de outros bancos e requisições a serem feitas para outros bancos.
 # Interface faz a requisição.
