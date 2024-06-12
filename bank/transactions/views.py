@@ -227,3 +227,4 @@ def receive(request):
             return JsonResponse({'status': 'ABORT'}, status=404)
 
     return JsonResponse({'message': 'Você precisa enviar uma requisição POST'}, status=400)
+
