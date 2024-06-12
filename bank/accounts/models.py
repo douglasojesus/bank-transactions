@@ -21,6 +21,7 @@ class Client(AbstractBaseUser, PermissionsMixin):
     username = models.CharField(max_length=255)
     balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     blocked_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0.0) 
+    in_transaction = models.BooleanField(default=False)
     is_staff = models.BooleanField('Staff', default=False)
     is_active = models.BooleanField('Ativo', default=True)
 
