@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Configurar Bancos</title>
+    <script>
+        function addBankField() {
+            const container = document.getElementById('banks-container');
+            const div = document.createElement('div');
+            div.innerHTML = `
+                <input type="text" name="name[]" placeholder="Nome do Banco" required>
+                <input type="text" name="ip[]" placeholder="IP do Banco" required>
+                <input type="text" name="port[]" placeholder="Porta do Banco" required>
+                <button type="button" onclick="removeBankField(this)">Remover</button>
+                <br>
+            `;
+            container.appendChild(div);
+        }
+
+        function removeBankField(button) {
+            button.parentNode.remove();
+        }
+    </script>
+</head>
+<body>
+    <h1>Configurar Bancos do Consórcio</h1>
+    <form method="post">
+        {% csrf_token %}
+        <div id="banks-container">
+            <div>
+                <input type="text" name="name[]" placeholder="Nome do Banco" required>
+                <input type="text" name="ip[]" placeholder="IP do Banco" required>
+                <input type="text" name="port[]" placeholder="Porta do Banco" required>
+                <button type="button" onclick="removeBankField(this)">Remover</button>
+                <br>
+            </div>
+        </div>
+        <button type="button" onclick="addBankField()">Adicionar Banco</button>
+        <button type="submit">Salvar Todos os Bancos</button>
+    </form>
+
+    <h2>Bancos Configurados:</h2>
+    <ul>
+        {% for bank in banks %}
+            <li>{{ bank.name }} - IP: {{ bank.ip }} - Porta: {{ bank.port }}</li>
+        {% endfor %}
+    </ul>
+    <script>
+        {% if messages %}
+            {% for message in messages %}
+                alert("{{ message }}");
+            {% endfor %}
+        {% endif %}
+    </script>
+</body>
+</html>

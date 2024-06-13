@@ -13,7 +13,7 @@ MUDANÇAS:
 - Vai ter de trabalhar bastante com gerenciamento de estados, onde esse estado é compartilhado entre todos os bancos. 
 
 """
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
 from accounts.models import Client  # Este cliente do banco
 from django.http import JsonResponse
 import requests
@@ -24,11 +24,38 @@ from decimal import Decimal
 from django.contrib import messages
 from .models import Bank
 
-def configure():
-    # Configurar quem são os bancos conhecidos e se conectar com todos
-    # Só irá aparecer para o usuário, os bancos que forem conectados
-    # O banco que o cliente está logado será o coordenador.
-    pass
+# Faça um template para que, quando a rota configure/ for chamada, seja exibido na tela um espaço para adicionar o IP, nome e PORTA do banco e salvar na entidade Bank
+# esse template precisa permitir que o usuário salve quantos bancos desejar 
+CONFIGURED = False
+
+def configure(request):
+    global CONFIGURED
+    print(CONFIGURED)
+    if not CONFIGURED:
+        if request.method == 'POST':
+            names = request.POST.getlist('name[]')
+            ips = request.POST.getlist('ip[]')
+            portas = request.POST.getlist('port[]')
+
+            print(names, ips, portas)
+
+            for name, ip, porta in zip(names, ips, portas):
+                print("entrei no for")
+                bank = Bank.objects.create(name=name, ip=ip, port=porta)
+                bank.save()
+                print("salvei um banco")
+                
+            print("salvei todos os bancos")
+
+            CONFIGURED = True
+            messages.success(request, "Bancos adicionados ao consórcio. Garanta que nos outros bancos, esses bancos também tenham sido registrados.")
+            # talvez fazer requisição para esses bancos para eles salvarem esse banco tbm
+            return redirect('home_page')
+    else:
+        messages.error(request, "Os bancos já foram adicionados ao consórcio uma vez.")
+        
+    banks = Bank.objects.all()
+    return render(request, 'configure.html', {'banks': banks})
     
 ### Solicita bloqueio de todos os bancos de dados de outros Bancos configurados.
 ### Colocar em arquivo de scripts.

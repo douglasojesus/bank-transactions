@@ -19,6 +19,13 @@
         <p>Please <a href="{% url 'sign_in_page' %}">sign in</a> to access your account information.</p>
     {% endif %}
 </div>
+<script>
+    {% if messages %}
+        {% for message in messages %}
+            alert("{{ message }}");
+        {% endfor %}
+    {% endif %}
+</script>
 
 </body>
 </html>
