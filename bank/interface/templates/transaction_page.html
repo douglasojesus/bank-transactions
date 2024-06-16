@@ -11,7 +11,15 @@
     <div class="container">
         <h1>Transações Bancárias</h1>
         <h2>Olá, {{ user.first_name }} {{ user.last_name }}. </h2>
-        <h2>Seu saldo atual é de: R$ {{ user.balance }}</h2>
+
+        <ul>
+            <li>Neste banco - R$ {{ user.balance }} </li>
+            {% for bank, balance in bank_balance_map.items %}
+                <li>{{ bank }} - R$ {{ balance }}</li>
+            {% endfor %}
+        </ul>
+
+        <p>Coloque exatamente o nome do banco que você quer retirar o dinheiro e a quantia.</p>
 
         <form method="POST" action="{% url 'transaction_page' %}">
             {% csrf_token %}
@@ -36,10 +44,22 @@
                 <input type="text" id="client_to_transfer" name="client_to_transfer">
             </div>
 
+            <div id="bank-fields">
+                <div class="bank-field">
+                    <label for="bank_name_0">Nome do Banco:</label><br>
+                    <input type="text" id="bank_name_0" name="bank_name_0" required>
+                    <label for="bank_value_0">Valor:</label><br>
+                    <input type="number" step="0.01" id="bank_value_0" name="bank_value_0" required>
+                </div>
+            </div>
+
+            <button type="button" onclick="addBankField()">Adicionar outro banco</button>
             <button type="submit">Efetuar transação</button>
         </form>
     </div>
     <script>
+        let bankFieldCount = 1;
+
         function toggleRecipientFields(choice) {
             var recipientFields = document.getElementById('recipient-fields');
             if (choice === 'transfer' || choice === 'payment') {
@@ -47,6 +67,20 @@
             } else {
                 recipientFields.style.display = 'none';
             }
+        }
+
+        function addBankField() {
+            var bankFields = document.getElementById('bank-fields');
+            var newField = document.createElement('div');
+            newField.classList.add('bank-field');
+            newField.innerHTML = `
+                <label for="bank_name_${bankFieldCount}">Nome do Banco:</label>
+                <input type="text" id="bank_name_${bankFieldCount}" name="bank_name_${bankFieldCount}" required>
+                <label for="bank_value_${bankFieldCount}">Valor:</label>
+                <input type="number" step="0.01" id="bank_value_${bankFieldCount}" name="bank_value_${bankFieldCount}" required>
+            `;
+            bankFields.appendChild(newField);
+            bankFieldCount++;
         }
 
         {% if messages %}

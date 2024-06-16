@@ -24,8 +24,6 @@ from decimal import Decimal
 from django.contrib import messages
 from .models import Bank
 
-# Faça um template para que, quando a rota configure/ for chamada, seja exibido na tela um espaço para adicionar o IP, nome e PORTA do banco e salvar na entidade Bank
-# esse template precisa permitir que o usuário salve quantos bancos desejar 
 CONFIGURED = False
 
 def configure(request):
@@ -125,6 +123,16 @@ def unlock(request):
             return JsonResponse({'status': 'ABORT'}, status=404)
 
     return JsonResponse({'message': 'Você precisa enviar uma requisição POST'}, status=400)
+
+
+def get_user_info(request):
+    username = request.POST.get('username')
+    client = Client.objects.filter(username=username).first()
+    if client:
+        return JsonResponse({'balance': client.balance}, status=200)
+    else:
+        return JsonResponse({'error': 'Client not found'}, status=404)
+
 
 ### View que coordena transação deste Banco para os outros Bancos.
 ### Banco para transferir: bank_to_transfer. Bancos para pegar o valor: banks.
