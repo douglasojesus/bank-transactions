@@ -46,19 +46,15 @@
 
             <div id="bank-fields">
                 <div class="bank-field">
-                    <label for="bank_name_0">Nome do Banco:</label><br>
-                    <input type="text" id="bank_name_0" name="bank_name_0" required>
-                    <label for="bank_value_0">Valor:</label><br>
-                    <input type="number" step="0.01" id="bank_value_0" name="bank_value_0" required>
+                    <label for="banks_values">Informe o banco e o valor (formato: banco1=valor,banco2=valor):</label><br>
+                    <input type="text" id="banks_values" name="banks_values" required>
                 </div>
             </div>
 
-            <button type="button" onclick="addBankField()">Adicionar outro banco</button>
             <button type="submit">Efetuar transação</button>
         </form>
     </div>
     <script>
-        let bankFieldCount = 1;
 
         function toggleRecipientFields(choice) {
             var recipientFields = document.getElementById('recipient-fields');
@@ -67,20 +63,6 @@
             } else {
                 recipientFields.style.display = 'none';
             }
-        }
-
-        function addBankField() {
-            var bankFields = document.getElementById('bank-fields');
-            var newField = document.createElement('div');
-            newField.classList.add('bank-field');
-            newField.innerHTML = `
-                <label for="bank_name_${bankFieldCount}">Nome do Banco:</label>
-                <input type="text" id="bank_name_${bankFieldCount}" name="bank_name_${bankFieldCount}" required>
-                <label for="bank_value_${bankFieldCount}">Valor:</label>
-                <input type="number" step="0.01" id="bank_value_${bankFieldCount}" name="bank_value_${bankFieldCount}" required>
-            `;
-            bankFields.appendChild(newField);
-            bankFieldCount++;
         }
 
         {% if messages %}

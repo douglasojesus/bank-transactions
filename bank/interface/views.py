@@ -36,6 +36,9 @@ def external_client_info(username):
                 continue
     return bank_balance_map
 
+
+# pegar uma string só e fazer quebra da string para ser os valores dos bancos
+# deve ser escrito: banco1=1234,banco2=1234,banco3=1234
 def transaction_page(request):
     if (not(request.user.is_authenticated)):
         return redirect('sign_in_page')
@@ -53,22 +56,35 @@ def transaction_page(request):
                     port_to_transfer = form.cleaned_data['port_to_transfer']
                     client_to_transfer = form.cleaned_data['client_to_transfer']
 
-                    others_bank_value_to_remove = {}
-                    for key, value in request.POST.items():
-                        if key.startswith('bank_name_'):
-                            index = key.split('_')[-1]
-                            bank_name = value
-                            bank_value = request.POST.get(f'bank_value_{index}')
-                            if bank_value:
-                                others_bank_value_to_remove[bank_name] = float(bank_value)
+                    banks_and_values_withdraw = {} #banco: valor
+
+                    banks_values_buffer = request.POST.get("banks_values") # banco1=200,banco2=20
+                    print(banks_values_buffer)
+                    print(len(banks_values_buffer))
+                    key_value_buffer = ''
+                    # FAZER FUNÇÃO EM SCRIPTS PARA RETORNAR VALOR 
+                    for i in range(len(banks_values_buffer)):
+                        if banks_values_buffer[i] == '=':
+                            nome_banco = key_value_buffer
+                            key_value_buffer = ''
+                        elif banks_values_buffer[i] == ',' or i == len(banks_values_buffer):
+                            valor_transferencia = key_value_buffer
+                            key_value_buffer = ''
+                            banks_and_values_withdraw[nome_banco] = valor_transferencia
+                            valor_transferencia = ''
+                            nome_banco = ''
+                        else:
+                            key_value_buffer += banks_values_buffer[i]
+                    
+                    banks_and_values_withdraw[nome_banco] = key_value_buffer
 
                     # Aqui você pode lidar com o dicionário como necessário
-                    print(others_bank_value_to_remove)
+                    print(banks_and_values_withdraw)
 
                     if ip_to_transfer and port_to_transfer and client_to_transfer:
                         bank_to_transfer = (ip_to_transfer, port_to_transfer)
                         # Redireciona para a função de transferência existente em transactions
-                        response = transfer(request, value_to_transfer, bank_to_transfer, client_to_transfer)
+                        response = transfer(request, banks_and_values_withdraw, value_to_transfer, bank_to_transfer, client_to_transfer)
                         return response
                     else:
                         messages.error(request, "Você precisa inserir o banco, a agência e o cliente.")

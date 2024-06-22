@@ -65,7 +65,7 @@ def lock_all_banks(bank_list, value, client):
             response = requests.post(url, data={'value': value, 'client': client}, timeout=5)
             if response.status_code != 200 or response.json().get('status') != 'LOCKED':
                 return False
-            accounts[bank.ip] = response.json.get('client_object').blocked_balance #isso pode causar erro
+            accounts[response.json.get('client_object').name] = response.json.get('client_object').blocked_balance #isso pode causar erro
         except (ConnectTimeout, ReadTimeout):
             return False
     return accounts
@@ -134,16 +134,23 @@ def get_user_info(request):
         return JsonResponse({'error': 'Client not found'}, status=404)
 
 
+def verify_balance_otherbanks(banks_and_values_withdraw, balances_from_other_banks):
+    for key, value in banks_and_values_withdraw.items():
+        if not value <= balances_from_other_banks[key]:
+            return False
+    return True
+    
+
 ### View que coordena transação deste Banco para os outros Bancos.
 ### Banco para transferir: bank_to_transfer. Bancos para pegar o valor: banks.
 ### Esta view pega os valores que o cliente deste Banco quer transferir a partir de outros bancos e transfere para o banco que escolher.
 
 """
 Falta passar parâmetro que informa quais bancos e quais valores quer ser retirado desses bancos.
-sugestão: banks_and_values_to_steal
+sugestão: banks_and_values_withdraw
 """
 
-def transfer(request, value_to_transfer, bank_to_transfer, client_to_transfer):
+def transfer(request, banks_and_values_withdraw, value_to_transfer, bank_to_transfer, client_to_transfer):
     if not request.user.is_authenticated:
         return redirect('sign_in_page')
     else:
@@ -172,7 +179,11 @@ def transfer(request, value_to_transfer, bank_to_transfer, client_to_transfer):
                     return redirect('transaction_page')
                 
                 # verifica se o cliente possui saldo nesses outros bancos
-                # pega os valores passados por parametro e verifica se é menor ou igual dos balances_from_other_banks
+                is_sufficient_funds = verify_balance_otherbanks(banks_and_values_withdraw, balances_from_other_banks)
+
+                if not is_sufficient_funds:
+                    #retornar erro
+                    pass
 
                 # precisa pegar os valores desses outros bancos e enviar no primeiro commit: prepare
 
