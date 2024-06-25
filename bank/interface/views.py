@@ -27,6 +27,7 @@ def external_client_info(username):
     if banks.first():
         for bank in banks:
             url = f'http://{bank.ip}:{bank.port}/get_user_info/'
+            print(url)
             try:
                 response = requests.post(url, data={'username': username}, timeout=5)
                 if response.status_code == 200:
@@ -45,6 +46,8 @@ def transaction_page(request):
     else:
         user = Client.objects.filter(username=request.user.username).first()
         # fazer requisições para outros bancos para pegar informações desse cliente
+        print("até aqui ta de boa. transaction_page antes de pegar o bank_balance_map")
+        print(user.username)
         bank_balance_map = external_client_info(user.username)
         print(bank_balance_map)
         if request.method == 'POST':
