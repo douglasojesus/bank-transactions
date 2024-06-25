@@ -34,12 +34,16 @@ https://www.imperial.ac.uk/media/imperial-college/faculty-of-engineering/computi
 Para rodar o Sistema:
 
 git clone https://github.com/douglasojesus/bank-transactions.git
-cd bank-transactions/bank/
+cd bank-transactions/
 docker-compose build
-docker-compose up
+docker-compose -p nome_do_projeto up
+
+se for usar mais de um docker, configurar manualmente os arquivos dockerfile e docker-compose.yml para mudar a porta do servidor postgres e django
 
 para ver o banco de dados:
-abre o pgAdmin
+abre o pgAdmin: interface para db
+
+
 
 
 docker build -t bank .

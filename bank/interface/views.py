@@ -46,6 +46,7 @@ def transaction_page(request):
         user = Client.objects.filter(username=request.user.username).first()
         # fazer requisições para outros bancos para pegar informações desse cliente
         bank_balance_map = external_client_info(user.username)
+        print(bank_balance_map)
         if request.method == 'POST':
             form = TransactionForm(request.POST)
             if form.is_valid(): 
