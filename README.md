@@ -30,3 +30,24 @@ This is done primarily in order to prevent situations in which 2pl would exhibit
 since lock acquisitions can be done in some precise order that all transactions need to follow.
 
 https://www.imperial.ac.uk/media/imperial-college/faculty-of-engineering/computing/public/1617-ug-projects/David-Pollak---Reasoning-about-Two-phase-Locking-Concurrency-Control.pdf
+
+Para rodar o Sistema:
+
+git clone https://github.com/douglasojesus/bank-transactions.git
+cd bank-transactions/bank/
+docker-compose build
+docker-compose up
+
+para ver o banco de dados:
+abre o pgAdmin
+
+
+docker build -t bank .
+docker run --network='host' -it --name container_bank bank
+
+remover todas imagens:
+docker rmi $(docker images -a -q)
+
+instalar o docker compose:
+sudo curl -L "https://github.com/docker/compose/releases/download/v2.17.3/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+sudo chmod +x /usr/local/bin/docker-compose
