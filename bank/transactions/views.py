@@ -155,6 +155,7 @@ def transfer(request, banks_and_values_withdraw, value_to_transfer, bank_to_tran
         return redirect('sign_in_page')
     else:
         try:
+            banks = Bank.objects.all()
             with transaction.atomic():
                 bank_client = Client.objects.select_for_update().get(username=request.user)
 
@@ -165,8 +166,6 @@ def transfer(request, banks_and_values_withdraw, value_to_transfer, bank_to_tran
                 if bank_client.balance < value_to_transfer:
                     messages.error(request, "Saldo insuficiente na conta de origem.")
                     return redirect('transaction_page')
-
-                banks = Bank.objects.all()
 
                 ## Inicia transação do Two Phase Locking, bloqueando todas as contas.
 

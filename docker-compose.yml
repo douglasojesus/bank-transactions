@@ -67,9 +67,43 @@ services:
     networks:
       - projeto-network
 
+  db3:
+    image: postgres:13-alpine
+    volumes:
+      - db_python3:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=123456
+      - POSTGRES_DB=bank_transaction_db_3
+    ports:
+      - "5434:5434"
+    networks:
+      - projeto-network
+
+  app3:
+    build: 
+      context: .
+    ports:
+      - "8002:8002"
+    volumes:
+      - ./bank:/bank
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8002"
+    environment:
+      - DB_HOST=db3
+      - DB_NAME=bank_transaction_db_3
+      - DB_USER=postgres
+      - DB_PASSWORD=123456
+    depends_on:
+      - db3
+    networks:
+      - projeto-network
+
 volumes:
   db_python1:
   db_python2:
+  db_python3:
 
 networks:
   projeto-network:

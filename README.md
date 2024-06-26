@@ -42,8 +42,11 @@ para configurar os bancos é necessário ver os ips dos conteiners.
 
 - rode docker ps para ver o ip.
 - acesse o servidor através do ip.
+- sudo docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' bank-transactions-app1-1
+sudo docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' bank-transactions-app2-1
+sudo docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' bank-transactions-app3-1
 
-se for usar mais de um docker, configurar manualmente os arquivos dockerfile e docker-compose.yml para mudar a porta do servidor postgres e django
+
 
 para ver o banco de dados:
 abre o pgAdmin: interface para db
