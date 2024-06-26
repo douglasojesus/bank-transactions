@@ -26,6 +26,7 @@ from .models import Bank
 
 CONFIGURED = False
 
+@csrf_exempt
 def configure(request):
     global CONFIGURED
     print(CONFIGURED)
