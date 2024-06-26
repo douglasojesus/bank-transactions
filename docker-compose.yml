@@ -11,12 +11,14 @@ services:
       - POSTGRES_DB=bank_transaction_db
     ports:
       - "5432:5432"
+    network_mode: "host"
 
   app:
     build: 
       context: .
     ports:
       - "8000:8000"
+    network_mode: "host"
     volumes:
       - ./bank:/bank
     command: >

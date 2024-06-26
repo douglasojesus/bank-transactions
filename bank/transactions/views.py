@@ -124,7 +124,7 @@ def unlock(request):
 
     return JsonResponse({'message': 'Você precisa enviar uma requisição POST'}, status=400)
 
-
+@csrf_exempt
 def get_user_info(request):
     username = request.POST.get('username')
     client = Client.objects.filter(username=username).first()

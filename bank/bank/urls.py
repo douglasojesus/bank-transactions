@@ -10,5 +10,5 @@ urlpatterns = [
     path('interface/', include('interface.urls')),
     path('auth/', include('auth_service.urls')),
     path('transaction/', include('transactions.urls')),
-    path('get_user_info', get_user_info, name='get_user_info'),
+    path('get_user_info/', get_user_info, name='get_user_info'),
 ]
