@@ -1,65 +1,66 @@
-Conservative Two-Phase Locking: este protocolo obriga a transação a bloquear todos os itens que acessa antes de iniciar a execução. Nenhum dos itens será bloqueado pela transação se algum objeto pré-declarado não puder ser bloqueado. Em vez disso, ele espera até que todos os itens estejam prontos para serem bloqueados antes de prosseguir.
+# Bank Transactions System
 
-Este protocolo não possui fase de crescimento, pois é necessário bloquear os dados antes de utilizá-los. Além disso, esta regra elimina o deadlock liberando todos os bloqueios e tentando novamente mais tarde se um item não estiver acessível para bloqueio, ou seja, sem Hold and Wait.
+Este é um sistema para processamento de transações bancárias, utilizando Docker e Docker Compose para configurar e executar três aplicativos separados.
 
-Como o 2PL garante que nenhum impasse ocorra?
-O protocolo emprega bloqueios aplicados aos dados por uma transação e pode impedir que outras transações acessem os mesmos dados durante toda a vida da transação.
-Os bloqueios são aplicados e retirados em duas etapas de acordo com o protocolo 2PL:
-1) Os bloqueios são obtidos e nenhum bloqueio é liberado durante a fase de expansão.
-2) Os bloqueios são liberados e nenhum bloqueio é adquirido durante a etapa de redução.
+## Configuração Inicial
 
-Ref: https://www.naukri.com/code360/library/conservative-2-phase-locking
+### Clonando o Repositório
 
-Two-Phase-Locking (2pl) is a concurrency control protocol which is vastly used in commercial DBS products. In its base version, as the name suggests, each transaction Ti
-’s execution
-can be divided into two phases [3]: a growing phase where Ti sequentially acquires locks for all
-the data items it is going to access, and a shrinking phase that starts on the first lock release
-and will unlock all the items it holds, one after the other. According to 2pl, during the growing
-phase no locks are released, and once the shrinking phase has started, no locks are acquired.
-Formally, all histories that result from the use of 2pl will have an additional property in comparison to the ones already mentioned for locking protocols. In fact lock operations will be
-further ordered as to comply with the two phase separation:
-∀x, y, κa, κb, i.({L[κa, x]i
-,U[κb, y]i} ⊂ ΘH =⇒ L[κa, x]i @˙ U[κb, y]i)
-A variation of the method is Conservative Two-Phase-Locking (c2pl) that works in a similar
-way with the key difference that all locks ever needed as part of a transaction are acquired
-before any read or write operation happens. As a consequence, we can state that all histories
-H adhering to c2pl will be such that:
-∀x, op, κ, i.(op 6= L ∧ {L[κ, x]i
-, op} ⊆ ΘH) ⇒ L[κ, x]i @˙ op
-This is done primarily in order to prevent situations in which 2pl would exhibit deadlocks,
-since lock acquisitions can be done in some precise order that all transactions need to follow.
+```bash
+git clone https://github.com/douglasojesus/bank-transactions.git
+cd bank-transactions/
+```
 
-https://www.imperial.ac.uk/media/imperial-college/faculty-of-engineering/computing/public/1617-ug-projects/David-Pollak---Reasoning-about-Two-phase-Locking-Concurrency-Control.pdf
+### Construindo os contêineres:
+```bash
+docker-compose build
+```
 
-Para rodar o Sistema:
+### Executando o sistema:
+```bash
+docker-compose -p projeto up
+```
+Isso iniciará todos os contêineres necessários para os aplicativos.
 
-- git clone https://github.com/douglasojesus/bank-transactions.git
-- cd bank-transactions/
-- docker-compose build
-- docker-compose -p nome_do_projeto up
+## Configuração dos Bancos de Dados
 
-para configurar os bancos é necessário ver os ips dos conteiners. 
+Para configurar os bancos de dados, você precisará dos IPs dos contêineres. Você pode encontrá-los usando o comando `docker ps` e, em seguida, inspecionando cada contêiner conforme mostrado abaixo:
 
-- rode docker ps para ver o ip.
-- acesse o servidor através do ip.
-- sudo docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' bank-transactions-app1-1
+### Obtenção dos IPs dos Contêineres
+
+```bash
+sudo docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' bank-transactions-app1-1
 sudo docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' bank-transactions-app2-1
 sudo docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' bank-transactions-app3-1
+```
 
+### Acesso aos Servidores
+Acesse cada servidor utilizando o IP correspondente para configurar os bancos de dados conforme necessário.
 
+### Testes Automatizados
+Você pode usar o arquivo teste_automatizado/main.py para automatizar o acesso às URLs dos contêineres e testar o sistema.
+```bash
+cd teste_automatizado/main.py
+sudo python3 main.py
+```
 
-para ver o banco de dados:
-abre o pgAdmin: interface para db
+Conservative Two-Phase Locking (C2PL)
 
+O Conservative Two-Phase Locking é um protocolo de controle de concorrência que requer que uma transação adquira todos os bloqueios necessários antes de iniciar sua execução. Ele difere do Two-Phase Locking (2PL) no sentido de que todos os bloqueios são obtidos antes de qualquer operação de leitura ou escrita ocorrer.
 
+Fase de Bloqueio Completo: Antes de iniciar a execução, a transação adquire todos os bloqueios necessários. Nenhum item é bloqueado até que todos os itens estejam prontos para serem bloqueados, evitando assim que um item não bloqueável cause a espera (Hold and Wait).
 
+Eliminação de Deadlock: Se um item não estiver disponível para bloqueio, todos os bloqueios são liberados e a transação tenta novamente mais tarde, sem manter bloqueios enquanto espera.
 
-docker build -t bank .
-docker run --network='host' -it --name container_bank bank
+Two-Phase Locking (2PL)
+O Two-Phase Locking é um protocolo de controle de concorrência amplamente utilizado em produtos de banco de dados comerciais. Ele divide a execução de uma transação em duas fases distintas:
 
-remover todas imagens:
-docker rmi $(docker images -a -q)
+Fase de Crescimento (Growing Phase): Durante esta fase, a transação adquire sequencialmente todos os bloqueios necessários para os itens de dados que irá acessar. Nenhum bloqueio é liberado durante esta fase.
 
-instalar o docker compose:
-sudo curl -L "https://github.com/docker/compose/releases/download/v2.17.3/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-sudo chmod +x /usr/local/bin/docker-compose
+Fase de Redução (Shrinking Phase): Inicia-se quando o primeiro bloqueio é liberado. Nesta fase, a transação começa a liberar os bloqueios, um após o outro, e não adquire nenhum novo bloqueio.
+
+Propriedade Adicional: Todas as histórias que resultam do uso do 2PL têm a propriedade adicional de que as operações de bloqueio são ordenadas para cumprir a separação em duas fases.
+
+Para mais detalhes sobre o Two-Phase Locking, consulte este documento.
+
+Essas estratégias são essenciais para garantir a consistência e a integridade dos dados em ambientes de banco de dados multiusuário, prevenindo impasses (deadlocks) e conflitos de acesso simultâneo aos dados.
