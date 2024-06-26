@@ -3,7 +3,7 @@ FROM python:3.10-slim
 COPY ./requirements.txt /tmp/requirements.txt
 COPY ./bank /bank
 WORKDIR /bank
-EXPOSE 8000
+EXPOSE 8001
 
 RUN python -m venv /py && \
     /py/bin/pip install --upgrade pip && \

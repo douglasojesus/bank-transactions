@@ -7,6 +7,28 @@ from django.contrib import messages
 from transactions.models import Bank
 from requests.exceptions import ConnectTimeout, ReadTimeout
 import requests
+from django.contrib.auth import get_user_model
+from transactions.views import CONFIGURED
+
+
+def create_test(request):
+    clientes = {'douglas': ["Douglas", "Jesus", "douglas@gmail.com", "1234"],
+                'fulano': ["Fulano", "Silva", "fulano@gmail.com", "1234"],
+                'ciclano': ["Ciclano", "Santos", "ciclano@gmail.com", "1234"]}
+    User = get_user_model()
+    User.objects.create_user(first_name=clientes['douglas'][0], last_name=clientes['douglas'][1],
+                            email=clientes['douglas'][2], username='douglas', password=clientes['douglas'][3])
+    User.objects.create_user(first_name=clientes['fulano'][0], last_name=clientes['fulano'][1],
+                            email=clientes['fulano'][2], username='fulano', password=clientes['fulano'][3])
+    User.objects.create_user(first_name=clientes['ciclano'][0], last_name=clientes['ciclano'][1],
+                            email=clientes['ciclano'][2], username='ciclano', password=clientes['ciclano'][3])
+    return redirect('home_page')
+
+def flush(request):
+    Bank.objects.all().delete()
+    Client.objects.all().delete()
+    CONFIGURED = False
+    return redirect('home_page')
 
 # Create your views here.
 def home_page(request):
@@ -28,13 +50,13 @@ def external_client_info(username):
         for bank in banks:
             url = f'http://{bank.ip}:{bank.port}/get_user_info/'
             print(url)
-            try:
-                response = requests.post(url, data={'username': username}, timeout=5)
-                if response.status_code == 200:
-                    data = response.json()
-                    bank_balance_map[bank.name] = data.get('balance')
-            except (ConnectTimeout, ReadTimeout):
-                continue
+            #try:
+            response = requests.post(url, data={'username': username}, timeout=5)
+            if response.status_code == 200:
+                data = response.json()
+                bank_balance_map[bank.name] = data.get('balance')
+            #except (ConnectTimeout, ReadTimeout):
+            #    print("deu erro de connecttimeout ou readtimeout")
     return bank_balance_map
 
 

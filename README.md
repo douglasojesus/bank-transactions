@@ -33,10 +33,15 @@ https://www.imperial.ac.uk/media/imperial-college/faculty-of-engineering/computi
 
 Para rodar o Sistema:
 
-git clone https://github.com/douglasojesus/bank-transactions.git
-cd bank-transactions/
-docker-compose build
-docker-compose -p nome_do_projeto up
+- git clone https://github.com/douglasojesus/bank-transactions.git
+- cd bank-transactions/
+- docker-compose build
+- docker-compose -p nome_do_projeto up
+
+para configurar os bancos é necessário ver os ips dos conteiners. 
+
+- rode docker ps para ver o ip.
+- acesse o servidor através do ip.
 
 se for usar mais de um docker, configurar manualmente os arquivos dockerfile e docker-compose.yml para mudar a porta do servidor postgres e django
 
