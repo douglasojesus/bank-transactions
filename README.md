@@ -64,3 +64,7 @@ Propriedade Adicional: Todas as histórias que resultam do uso do 2PL têm a pro
 Para mais detalhes sobre o Two-Phase Locking, consulte este documento.
 
 Essas estratégias são essenciais para garantir a consistência e a integridade dos dados em ambientes de banco de dados multiusuário, prevenindo impasses (deadlocks) e conflitos de acesso simultâneo aos dados.
+
+Bibliografia:
+https://www.imperial.ac.uk/media/imperial-college/faculty-of-engineering/computing/public/1617-ug-projects/David-Pollak---Reasoning-about-Two-phase-Locking-Concurrency-Control.pdf
+https://www.naukri.com/code360/library/conservative-2-phase-locking
