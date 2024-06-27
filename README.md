@@ -68,3 +68,27 @@ Essas estratégias são essenciais para garantir a consistência e a integridade
 Bibliografia:
 https://www.imperial.ac.uk/media/imperial-college/faculty-of-engineering/computing/public/1617-ug-projects/David-Pollak---Reasoning-about-Two-phase-Locking-Concurrency-Control.pdf
 https://www.naukri.com/code360/library/conservative-2-phase-locking
+
+## Gerenciamento do saldo:
+
+São usados dois algoritmos: o two-phase commit e o two-phase locking. Cada um tem 2 fases.
+
+### 1° Fase - Two Phase Locking:
+
+Saldo -> Saldo Bloqueado
+
+### 2° Fase - Two Phase Locking:
+
+### 1° Fase - Two Phase Commit:
+
+Saldo Bloqueado -> Em Transação
+
+### 2° Fase - Two Phase Commit:
+
+Em Transação -> Saldo Bloqueado
+
+### 3° Fase - Two Phase Commit:
+
+### 2° Fase - Two Phase Locking:
+
+Saldo Bloqueado -> Saldo

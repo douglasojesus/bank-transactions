@@ -59,11 +59,15 @@ def configure(request):
 ### Solicita bloqueio de todos os bancos de dados de outros Bancos configurados.
 ### Colocar em arquivo de scripts.
 def lock_all_banks(bank_list, value, client):
+    client.blocked_balance += Decimal(client.balance)
+    client.balance = 0
+    client.in_transaction = True
+    client.save()
     accounts = {}
     for bank in bank_list:
-        url = f'http://{bank.ip}:{bank.porta}/lock/'
+        url = f'http://{bank.ip}:{bank.porta}/transaction/lock/'
         try:
-            response = requests.post(url, data={'value': value, 'client': client}, timeout=5)
+            response = requests.post(url, data={'value': value, 'client': client.username}, timeout=5)
             if response.status_code != 200 or response.json().get('status') != 'LOCKED':
                 return False
             accounts[response.json.get('client_object').name] = response.json.get('client_object').blocked_balance #isso pode causar erro
@@ -74,15 +78,48 @@ def lock_all_banks(bank_list, value, client):
 ### Solicita desbloqueio de todos os bancos de dados de outros Bancos configurados.
 ### Colocar em arquivo de scripts.
 def unlock_all_banks(bank_list, client):
+    client.balance = client.blocked_balance
+    client.blocked_balance = Decimal(0)
+    client.in_transaction = False
+    client.save()
     for bank in bank_list:
-        url = f'http://{bank.ip}:{bank.porta}/unlock/'
+        url = f'http://{bank.ip}:{bank.porta}/transaction/unlock/'
         try:
-            response = requests.post(url, data={'client': client}, timeout=5)
+            response = requests.post(url, data={'client': client.usename}, timeout=5)
         except (ConnectTimeout, ReadTimeout):
             continue
 
-def subtract_balance_all_banks():
-    pass
+# Solicita subtração dos valores dos bancos que efetuarão a transferência.
+def subtract_balance_all_banks(bank_client, bank_list, banks_and_values_withdraw):
+    for key, value in banks_and_values_withdraw.items():
+        if key == 'this':
+            # subtrai inclusive desse banco atual se houver
+            bank_client.balance -= value
+            bank_client.save()
+        for bank in bank_list:
+            if bank.name == key:
+                bank_obj = bank
+                break
+        url = f'http://{bank_obj.ip}:{bank_obj.porta}/transaction/subtract/'
+        response = requests.post(url, data={'client': bank_client.username, 'value': value}, timeout=5)
+        if response.json().get('status') == 'ABORT':
+            return False
+    return True
+    
+# Subtrai do valor bloqueado o valor a ser transferido deste banco.
+def subtract(request):
+    if request.method == 'POST':
+        client_to_subtract = request.POST.get('client')
+        value_to_subtract = request.POST.get('value')
+        try:
+            with transaction.atomic():
+                bank_client = Client.objects.select_for_update().get(username=client_to_subtract)
+                bank_client.blocked_balance -= Decimal(value_to_subtract)
+                bank_client.save()
+                return JsonResponse({'status': 'COMMITED'})
+        except:
+            return JsonResponse({'status': 'ABORT'}, status=404)
+    return JsonResponse({'message': 'Você precisa enviar uma requisição POST'}, status=400)
 
 ### Requisição recebida por outro Banco para bloquear o banco de dados deste Banco.
 ### O banco de dados em si não é bloqueado, mas sim o valor na conta do cliente para transação.
@@ -95,6 +132,8 @@ def lock(request):
         try:
             with transaction.atomic():
                 bank_client = Client.objects.select_for_update().get(username=client_to_lock)
+                if bank_client.in_transaction:
+                    return JsonResponse({'status': 'ABORT', 'message': 'IN_TRANSACTION'}, status=404)
                 bank_client.blocked_balance += Decimal(bank_client.balance)
                 bank_client.balance = 0
                 bank_client.in_transaction = True
@@ -140,7 +179,35 @@ def verify_balance_otherbanks(banks_and_values_withdraw, balances_from_other_ban
         if not value <= balances_from_other_banks[key]:
             return False
     return True
-    
+
+def return_to_initial_balances(bank_client, bank_list, banks_and_values_withdraw):
+    for key, value in banks_and_values_withdraw.items():
+        if key == 'this':
+            bank_client.blocked_balance = Decimal(value)
+            bank_client.save()
+        for bank in bank_list:
+            if bank.name == key:
+                bank_obj = bank
+                break
+        url = f'http://{bank_obj.ip}:{bank_obj.porta}/transaction/return_to_initial_balance/'
+        response = requests.post(url, data={'client': bank_client.username, 'value': value}, timeout=5)
+        if response.json().get('status') == 'ABORT':
+            return False, bank_obj
+    return True, bank_obj
+
+def return_to_initial_balance(request):
+    if request.method == 'POST':
+        client_to_return = request.POST.get('client')
+        value_to_return = request.POST.get('value')
+        try:
+            with transaction.atomic():
+                bank_client = Client.objects.select_for_update().get(username=client_to_return)
+                bank_client.blocked_balance = Decimal(value_to_return)
+                bank_client.save()
+                return JsonResponse({'status': 'COMMITED'})
+        except:
+            return JsonResponse({'status': 'ABORT'}, status=404)
+    return JsonResponse({'message': 'Você precisa enviar uma requisição POST'}, status=400)
 
 ### View que coordena transação deste Banco para os outros Bancos.
 ### Banco para transferir: bank_to_transfer. Bancos para pegar o valor: banks.
@@ -159,74 +226,78 @@ def transfer(request, banks_and_values_withdraw, value_to_transfer, bank_to_tran
             banks = Bank.objects.all()
             with transaction.atomic():
                 bank_client = Client.objects.select_for_update().get(username=request.user)
+                bank_list = Bank.objects.all()
+
+                ## Inicia transação do Two Phase Locking, bloqueando todas as contas.
 
                 if bank_client.in_transaction:
                     messages.error(request, "Cliente está em transação no momento. Aguarde.")
                     return redirect('transaction_page')
 
-                if bank_client.balance < value_to_transfer:
-                    messages.error(request, "Saldo insuficiente na conta de origem.")
-                    return redirect('transaction_page')
-
-                ## Inicia transação do Two Phase Locking, bloqueando todas as contas.
-
                 #{ip: saldo_bloqueado}
-                balances_from_other_banks = lock_all_banks(banks, value_to_transfer, request.user.username) #accounts[bank.ip] = response.json.get('client_object').blocked_balance
+                balances_from_other_banks = lock_all_banks(banks, value_to_transfer, bank_client) #accounts[bank.ip] = response.json.get('client_object').blocked_balance
                 
                 if not balances_from_other_banks:
                     messages.error(request, "Falha ao bloquear todos os bancos para a transação.")
-                    unlock_all_banks(banks, bank_client.username)
+                    unlock_all_banks(banks, bank_client)
                     return redirect('transaction_page')
                 
-                # verifica se o cliente possui saldo nesses outros bancos
+                # Verifica se o cliente possui saldo nos bancos
+                if 'this' in banks_and_values_withdraw:
+                    if bank_client.blocked_balance < banks_and_values_withdraw['this']:
+                        messages.error(request, "Não há saldo suficiente para efetuar essa transação.")
+                        return redirect('transaction_page')
+                    
                 is_sufficient_funds = verify_balance_otherbanks(banks_and_values_withdraw, balances_from_other_banks)
 
                 if not is_sufficient_funds:
-                    #retornar erro
-                    pass
+                    messages.error(request, "Não há saldo suficiente para efetuar essa transação.")
+                    return redirect('transaction_page')
 
-                # precisa pegar os valores desses outros bancos e enviar no primeiro commit: prepare
 
                 ## Inicia transação de dois commits. Primeiro commit: PREPARE.
-                # precisa pegar os valores dos outros bancos e enviar esse valor total por aqui
+                
                 url_request = f'http://{bank_to_transfer[0]}:{bank_to_transfer[1]}/transaction/receive/'
 
                 response = requests.post(url_request, data={'status': 'INIT', 'value': value_to_transfer, 'client': client_to_transfer}, timeout=5)
                 
                 if response.status_code != 200 or response.json().get('status') == 'ABORT':
                     # se o banco que ta recebendo abortou, os saldos são desbloqueados sem alteração no valor
-                    unlock_all_banks(banks, request.user.username)
+                    unlock_all_banks(banks, bank_client)
                     messages.error(request, f"O Banco {bank_to_transfer} precisou abortar a operação.")
                     return redirect('transaction_page')
 
-                # se o banco que ta recebendo confirmou que o cliente existe, os saldos são subtraidos dos outros bancos 
-                # precisa fazer função para subtrair os valores de outros bancos
-                # subtrai apenas o valor escolhido pelo cliente deste banco para ser subtraido banks_and_values_to_steal
-                if not subtract_balance_all_banks():
-                    #se não conseguiu subtrair o valor dos bancos, aborta
-                    #verifica se o saldo bloqueado dos outros bancos é igual ao que está em balances_from_other_banks
-                    #se for igual, só desbloqueia
-                    #se não for igual, ou seja, se já subtraiu, devolve de acordo com balances_from_other_banks
-                    pass
-
-                # subtrai inclusive desse banco atual se houver
-                bank_client.balance -= value_to_transfer
-                bank_client.save()
+                # Se o banco que ta recebendo confirmou que o cliente existe, os saldos são subtraidos dos outros bancos 
+                is_subtracted = subtract_balance_all_banks(bank_client, bank_list, banks_and_values_withdraw)
+                if not is_subtracted:
+                    # Se não conseguiu subtrair o valor, aborta.
+                    is_returned = return_to_initial_balances(bank_client, bank_list, banks_and_values_withdraw)
+                    if is_returned[0] == False:
+                        messages.error(request, f"O banco {is_returned[1]} não conseguiu retornar o valor para a conta depois do erro de transação.")
+                        return redirect('transaction_page')
+                    unlock_all_banks(bank_list, bank_client)
+                    messages.error(request, f"Operação abortada. Não foi possível subtrair valor de banco.")
+                    return redirect('transaction_page')
 
                 ## Segundo commit: COMMIT.
                 response = requests.post(url_request, data={'commit': 'True', 'value': value_to_transfer, 'client': client_to_transfer})
                 
                 ## Terceiro commit: ROLLBACK.
                 if response.status_code != 200 or response.json().get('status') != 'COMMITTED':
-                    # se o banco receptor não conseguiu responder, faz o que está em: if not subtract_balance_all_banks():
-                    # para devolver os valores 
+                    # Se o banco receptor não conseguiu responder, retorna o valor inicial para os bancos.
+                    is_returned = return_to_initial_balances(bank_client, bank_list, banks_and_values_withdraw)
+                    if is_returned[0] == False:
+                        messages.error(request, f"O banco {is_returned[1]} não conseguiu retornar o valor para a conta depois do erro de transação.")
+                        return redirect('transaction_page')
+                    
+                    # Faz chamada de rollback para o banco receptor.
                     rollback_response = requests.post(url_request, data={'rollback': 'True', 'value': value_to_transfer, 'client': client_to_transfer})
                     if rollback_response.status_code != 200 or rollback_response.json().get('status') != 'ROLLED BACK':
                         raise Exception(f"Falha ao confirmar a transação no Banco {bank_to_transfer} e falha ao reverter a operação.")
                     raise Exception(f"Falha ao confirmar a transação no Banco {bank_to_transfer}.")
 
                 # desbloqueia os bancos
-                unlock_all_banks(banks, request.user.username)
+                unlock_all_banks(banks, bank_client)
 
                 messages.success(request, f"Valor de R${value_to_transfer} transferido com sucesso!")
 
@@ -238,7 +309,7 @@ def transfer(request, banks_and_values_withdraw, value_to_transfer, bank_to_tran
             messages.error(request, f"A leitura dos dados da resposta da requisição excedeu o tempo limite especificado.")
             return redirect('transaction_page')
         finally:
-            unlock_all_banks(banks, request.user.username)
+            unlock_all_banks(banks, bank_client)
 
 ### Cliente só recebe valor se não estiver em transação. Nesta etapa, o valor já está bloqueado.
 # valor já está no blocked_balance, precisa mudar a estratégia de 'balance' = blocked_balance e blocked_balance = 'balance_in_transaction'
