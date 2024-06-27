@@ -65,13 +65,15 @@ def lock_all_banks(bank_list, value, client):
     client.save()
     accounts = {}
     for bank in bank_list:
-        url = f'http://{bank.ip}:{bank.porta}/transaction/lock/'
+        url = f'http://{bank.ip}:{bank.port}/transaction/lock/'
         try:
             response = requests.post(url, data={'value': value, 'client': client.username}, timeout=5)
             if response.status_code != 200 or response.json().get('status') != 'LOCKED':
+                print("nao estava locked o retorno para bloquear todos os bancos")
                 return False
-            accounts[response.json.get('client_object').name] = response.json.get('client_object').blocked_balance #isso pode causar erro
+            accounts[bank.name] = response.json().get('blocked_balance') #isso pode causar erro
         except (ConnectTimeout, ReadTimeout):
+            print("deu excecao al bloquear todos os bancos")
             return False
     return accounts
 
@@ -83,9 +85,9 @@ def unlock_all_banks(bank_list, client):
     client.in_transaction = False
     client.save()
     for bank in bank_list:
-        url = f'http://{bank.ip}:{bank.porta}/transaction/unlock/'
+        url = f'http://{bank.ip}:{bank.port}/transaction/unlock/'
         try:
-            response = requests.post(url, data={'client': client.usename}, timeout=5)
+            response = requests.post(url, data={'client': client.username}, timeout=5)
         except (ConnectTimeout, ReadTimeout):
             continue
 
@@ -94,16 +96,17 @@ def subtract_balance_all_banks(bank_client, bank_list, banks_and_values_withdraw
     for key, value in banks_and_values_withdraw.items():
         if key == 'this':
             # subtrai inclusive desse banco atual se houver
-            bank_client.balance -= value
+            bank_client.balance -= Decimal(value)
             bank_client.save()
-        for bank in bank_list:
-            if bank.name == key:
-                bank_obj = bank
-                break
-        url = f'http://{bank_obj.ip}:{bank_obj.porta}/transaction/subtract/'
-        response = requests.post(url, data={'client': bank_client.username, 'value': value}, timeout=5)
-        if response.json().get('status') == 'ABORT':
-            return False
+        else:
+            for bank in bank_list:
+                if bank.name == key:
+                    bank_obj = bank
+                    break
+            url = f'http://{bank_obj.ip}:{bank_obj.port}/transaction/subtract/'
+            response = requests.post(url, data={'client': bank_client.username, 'value': value}, timeout=5)
+            if response.json().get('status') == 'ABORT':
+                return False
     return True
     
 # Subtrai do valor bloqueado o valor a ser transferido deste banco.
@@ -138,7 +141,7 @@ def lock(request):
                 bank_client.balance = 0
                 bank_client.in_transaction = True
                 bank_client.save()
-                return JsonResponse({'status': 'LOCKED', 'client_object': bank_client}) # tem algum método para fazer to_json?
+                return JsonResponse({'status': 'LOCKED', 'client': bank_client.username, 'blocked_balance': bank_client.blocked_balance}) # tem algum método para fazer to_json?
         except Client.DoesNotExist:
             return JsonResponse({'status': 'ABORT'}, status=404)
 
@@ -173,11 +176,11 @@ def get_user_info(request):
     else:
         return JsonResponse({'error': 'Client not found'}, status=404)
 
-
 def verify_balance_otherbanks(banks_and_values_withdraw, balances_from_other_banks):
     for key, value in banks_and_values_withdraw.items():
-        if not value <= balances_from_other_banks[key]:
-            return False
+        if key != 'this':
+            if (Decimal(value) > Decimal(balances_from_other_banks[key])):
+                return False
     return True
 
 def return_to_initial_balances(bank_client, bank_list, banks_and_values_withdraw):
@@ -189,7 +192,7 @@ def return_to_initial_balances(bank_client, bank_list, banks_and_values_withdraw
             if bank.name == key:
                 bank_obj = bank
                 break
-        url = f'http://{bank_obj.ip}:{bank_obj.porta}/transaction/return_to_initial_balance/'
+        url = f'http://{bank_obj.ip}:{bank_obj.port}/transaction/return_to_initial_balance/'
         response = requests.post(url, data={'client': bank_client.username, 'value': value}, timeout=5)
         if response.json().get('status') == 'ABORT':
             return False, bank_obj
@@ -228,6 +231,8 @@ def transfer(request, banks_and_values_withdraw, value_to_transfer, bank_to_tran
                 bank_client = Client.objects.select_for_update().get(username=request.user)
                 bank_list = Bank.objects.all()
 
+                print(bank_client.blocked_balance, bank_client.balance)
+
                 ## Inicia transação do Two Phase Locking, bloqueando todas as contas.
 
                 if bank_client.in_transaction:
@@ -244,7 +249,7 @@ def transfer(request, banks_and_values_withdraw, value_to_transfer, bank_to_tran
                 
                 # Verifica se o cliente possui saldo nos bancos
                 if 'this' in banks_and_values_withdraw:
-                    if bank_client.blocked_balance < banks_and_values_withdraw['this']:
+                    if bank_client.blocked_balance < Decimal(banks_and_values_withdraw['this']):
                         messages.error(request, "Não há saldo suficiente para efetuar essa transação.")
                         return redirect('transaction_page')
                     
@@ -254,7 +259,8 @@ def transfer(request, banks_and_values_withdraw, value_to_transfer, bank_to_tran
                     messages.error(request, "Não há saldo suficiente para efetuar essa transação.")
                     return redirect('transaction_page')
 
-
+                print(bank_client.blocked_balance, bank_client.balance)
+                
                 ## Inicia transação de dois commits. Primeiro commit: PREPARE.
                 
                 url_request = f'http://{bank_to_transfer[0]}:{bank_to_transfer[1]}/transaction/receive/'
@@ -296,8 +302,11 @@ def transfer(request, banks_and_values_withdraw, value_to_transfer, bank_to_tran
                         raise Exception(f"Falha ao confirmar a transação no Banco {bank_to_transfer} e falha ao reverter a operação.")
                     raise Exception(f"Falha ao confirmar a transação no Banco {bank_to_transfer}.")
 
+                print(bank_client.blocked_balance, bank_client.balance)
                 # desbloqueia os bancos
                 unlock_all_banks(banks, bank_client)
+
+                print(bank_client.blocked_balance, bank_client.balance)
 
                 messages.success(request, f"Valor de R${value_to_transfer} transferido com sucesso!")
 

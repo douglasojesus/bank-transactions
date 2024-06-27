@@ -2,9 +2,9 @@ import subprocess
 
 # Lista de contêineres que você deseja obter o endereço IP
 container_names = [
-    'bank-transactions-app1-1',
-    'bank-transactions-app2-1',
-    'bank-transactions-app3-1'
+    'projeto-app1-1',
+    'projeto-app2-1',
+    'projeto-app3-1'
 ]
 
 # Dicionário para armazenar os resultados
@@ -32,8 +32,11 @@ urls = [
     f"http://{container_ips[2]}:8002/",
 ]
 
-for url in urls:
-    print(url)
+if container_ips[0] != '':
+    for url in urls:
+        print(url)
+else:
+    print("O seu contêiner não está em execução. Verifique isso antes de usar o menu.")
 
 import requests
 
