@@ -58,7 +58,11 @@ def configure(request):
         
     banks = Bank.objects.all()
     return render(request, 'configure.html', {'banks': banks})
-    
+
+def verify_balance(request, username):
+    cliente = Client.objects.get(username=username)
+    return JsonResponse({'balance': cliente.balance}, status=200)
+
 ### Solicita bloqueio de todos os bancos de dados de outros Bancos configurados.
 ### Colocar em arquivo de scripts.
 def lock_all_banks(bank_list, value, client, ip_bank_to_transfer):
@@ -68,17 +72,22 @@ def lock_all_banks(bank_list, value, client, ip_bank_to_transfer):
     client.save()
     accounts = {}
     for bank in bank_list:
-        url = f'http://{bank.ip}:{bank.port}/transaction/lock/'
         if bank.ip != ip_bank_to_transfer: # Só bloqueia os bancos que vão enviar dinheiro. 
+            url = f'http://{bank.ip}:{bank.port}/transaction/lock/'
             try:
                 response = requests.post(url, data={'value': value, 'client': client.username}, timeout=5)
                 if response.status_code != 200 or response.json().get('status') != 'LOCKED':
                     print("nao estava locked o retorno para bloquear todos os bancos")
                     return False
-                accounts[bank.name] = response.json().get('blocked_balance') #isso pode causar erro
+                accounts[bank.name] = response.json().get('blocked_balance') 
             except (ConnectTimeout, ReadTimeout):
                 print("deu excecao al bloquear todos os bancos")
                 return False
+        else:
+            url = f'http://{bank.ip}:{bank.port}/transaction/verify_balance/{client.username}/'
+            response = requests.get(url)
+            accounts[bank.name] = response.json().get('balance') 
+
     return accounts
 
 ### Solicita desbloqueio de todos os bancos de dados de outros Bancos configurados.
@@ -110,11 +119,13 @@ def subtract_balance_all_banks(bank_client, bank_list, banks_and_values_withdraw
                     break
             url = f'http://{bank_obj.ip}:{bank_obj.port}/transaction/subtract/'
             response = requests.post(url, data={'client': bank_client.username, 'value': value}, timeout=5)
+            logging.debug(f"response: {response}")
             if response.json().get('status') == 'ABORT':
                 return False
     return True
     
 # Subtrai do valor bloqueado o valor a ser transferido deste banco.
+@csrf_exempt
 def subtract(request):
     if request.method == 'POST':
         client_to_subtract = request.POST.get('client')
@@ -203,6 +214,7 @@ def return_to_initial_balances(bank_client, bank_list, banks_and_values_withdraw
             return False, bank_obj
     return True, bank_obj
 
+@csrf_exempt
 def return_to_initial_balance(request):
     if request.method == 'POST':
         client_to_return = request.POST.get('client')
