@@ -2,12 +2,12 @@ from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, Permis
 from django.db import models
 
 class ClientManager(BaseUserManager):
-    def create_user(self, first_name, last_name, email, username, password=None, balance=0):
+    def create_user(self, first_name, last_name, email, username, password=None, balance=0, is_superuser=False):
         if not email:
             raise ValueError('Usuário precisa de um email')
 
         email = self.normalize_email(email)
-        user = self.model(first_name=first_name, last_name=last_name, email=email, username=username, balance=balance)
+        user = self.model(first_name=first_name, last_name=last_name, email=email, username=username, balance=balance, is_superuser=is_superuser)
 
         user.set_password(password)
         user.save()
@@ -23,8 +23,9 @@ class Client(AbstractBaseUser, PermissionsMixin):
     blocked_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0.0) 
     in_transaction = models.BooleanField(default=False)
     in_transaction_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0.0)
-    is_staff = models.BooleanField('Staff', default=False)
+    is_staff = models.BooleanField('Staff', default=True)
     is_active = models.BooleanField('Ativo', default=True)
+    is_superuser = models.BooleanField(default=False)
 
     objects = ClientManager()
 

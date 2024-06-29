@@ -17,7 +17,7 @@ def create_test(request):
                 'ciclano': ["Ciclano", "Santos", "ciclano@gmail.com", "1234"]}
     User = get_user_model()
     User.objects.create_user(first_name=clientes['douglas'][0], last_name=clientes['douglas'][1],
-                            email=clientes['douglas'][2], username='douglas', password=clientes['douglas'][3])
+                            email=clientes['douglas'][2], username='douglas', password=clientes['douglas'][3], is_superuser=True)
     User.objects.create_user(first_name=clientes['fulano'][0], last_name=clientes['fulano'][1],
                             email=clientes['fulano'][2], username='fulano', password=clientes['fulano'][3])
     User.objects.create_user(first_name=clientes['ciclano'][0], last_name=clientes['ciclano'][1],
