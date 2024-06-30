@@ -1,4 +1,5 @@
 import subprocess
+import requests
 
 # Lista de contêineres que você deseja obter o endereço IP
 container_names = [
@@ -32,13 +33,12 @@ urls = [
     f"http://{container_ips[2]}:8002/",
 ]
 
-if container_ips[0] != '':
-    for url in urls:
-        print(url)
-else:
-    print("O seu contêiner não está em execução. Verifique isso antes de usar o menu.")
-
-import requests
+def exibe_urls(urls):
+    if container_ips[0] != '':
+        for url in urls:
+            print(url)
+    else:
+        print("O seu contêiner não está em execução. Verifique isso antes de usar o menu.")
 
 def registra_bancos(url, data):
     try:
@@ -55,11 +55,12 @@ def menu():
     print("""
 (1) Limpar todos os cadastros de clientes e bancos.
 (2) Configurar todos os 3 bancos para registrar os outros bancos.
-(3) Criar 3 clientes para teste nos 3 bancos.
+(3) Criar 3 clientes para teste nos 3 bancos (com mil reais na conta de todos os Douglas).
 """)
     return int(input('>>> '))
 
 while True:
+    exibe_urls(urls)
     opcao = menu()
     if opcao == 1:
         for i in range(len(urls)):
@@ -94,7 +95,7 @@ while True:
 
     if opcao == 3:
         for i in range(len(urls)):
-            command = 'curl ' + urls[i] + 'create_test'
+            command = 'curl ' + urls[i] + 'create_test/'
             print(command)
             result = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding='utf-8')
         print("Tudo criado!")

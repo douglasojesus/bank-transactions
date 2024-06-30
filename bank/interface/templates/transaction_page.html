@@ -12,15 +12,13 @@
         <h1>Transações Bancárias</h1>
         <h2>Olá, {{ user.first_name }} {{ user.last_name }}. </h2>
 
-        <ul>
-            <li>Neste banco - R$ {{ user.balance }} </li>
+        <ul class="balance-list">
+            <li>Neste banco (this) - R$ {{ user.balance }}</li>
             {% for bank, balance in bank_balance_map.items %}
                 <li>{{ bank }} - R$ {{ balance }}</li>
             {% endfor %}
         </ul>
-
-        <p>Coloque exatamente o nome do banco que você quer retirar o dinheiro e a quantia.</p>
-
+        
         <form method="POST" action="{% url 'transaction_page' %}">
             {% csrf_token %}
             <label for="choice">Selecione a ação:</label>
@@ -34,21 +32,17 @@
             <input type="number" step="0.01" id="value_to_transfer" name="value_to_transfer" required>
 
             <div id="recipient-fields" style="display: none;">
-                <label for="ip_to_transfer">Banco de destino (ip):</label>
-                <input type="text" id="ip_to_transfer" name="ip_to_transfer">
+                <label for="name_bank">Nome do banco (de acordo com os configurados acima):</label>
+                <input type="text" id="name_bank" name="name_bank">
                 <br>
-                <label for="port_to_transfer">Agência de destino (port):</label>
-                <input type="text" id="port_to_transfer" name="port_to_transfer">
-                <br>
-                <label for="client_to_transfer">Cliente de destino (username):</label>
+                <label for="client_to_transfer">Cliente de destino (username):</label><br>
                 <input type="text" id="client_to_transfer" name="client_to_transfer">
-                
-                
-                
+                <br>
+                <label for="banks_values">Informe o banco e o valor (formato: this=valor,bancoB=valor):</label><br>
+                <input type="text" id="banks_values" name="banks_values" required>
             </div>
             <div class="bank-field">
-                <label for="banks_values">Informe o banco e o valor (formato: bancoA=valor,bancoB=valor):</label><br>
-                <input type="text" id="banks_values" name="banks_values" required>
+                
             </div>
 
             <button type="submit">Efetuar transação</button>

@@ -17,7 +17,8 @@ def create_test(request):
                 'ciclano': ["Ciclano", "Santos", "ciclano@gmail.com", "1234"]}
     User = get_user_model()
     User.objects.create_user(first_name=clientes['douglas'][0], last_name=clientes['douglas'][1],
-                            email=clientes['douglas'][2], username='douglas', password=clientes['douglas'][3], is_superuser=True)
+                            email=clientes['douglas'][2], username='douglas', password=clientes['douglas'][3], 
+                            is_superuser=True, balance=1000)
     User.objects.create_user(first_name=clientes['fulano'][0], last_name=clientes['fulano'][1],
                             email=clientes['fulano'][2], username='fulano', password=clientes['fulano'][3])
     User.objects.create_user(first_name=clientes['ciclano'][0], last_name=clientes['ciclano'][1],
@@ -78,8 +79,7 @@ def transaction_page(request):
                 action = request.POST.get('choice')
                 if action == 'transfer':
                     value_to_transfer = form.cleaned_data['value_to_transfer']
-                    ip_to_transfer = form.cleaned_data['ip_to_transfer']
-                    port_to_transfer = form.cleaned_data['port_to_transfer']
+                    name_bank = form.cleaned_data['name_bank']
                     client_to_transfer = form.cleaned_data['client_to_transfer']
 
                     banks_and_values_withdraw = {} #banco: valor
@@ -106,9 +106,10 @@ def transaction_page(request):
 
                     # Aqui você pode lidar com o dicionário como necessário
                     print(banks_and_values_withdraw)
+                    bank = Bank.objects.get(name=name_bank)
 
-                    if ip_to_transfer and port_to_transfer and client_to_transfer:
-                        bank_to_transfer = (ip_to_transfer, port_to_transfer)
+                    if name_bank and client_to_transfer:
+                        bank_to_transfer = (bank.ip, bank.port, name_bank)
                         # Redireciona para a função de transferência existente em transactions
                         response = transfer(request, banks_and_values_withdraw, value_to_transfer, bank_to_transfer, client_to_transfer)
                         return response

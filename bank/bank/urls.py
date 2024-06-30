@@ -12,5 +12,5 @@ urlpatterns = [
     path('transaction/', include('transactions.urls')),
     path('get_user_info/', get_user_info, name='get_user_info'),
     path('flush/', flush, name="flush"),
-    path('create_test', create_test, name="create_test")
+    path('create_test/', create_test, name="create_test")
 ]

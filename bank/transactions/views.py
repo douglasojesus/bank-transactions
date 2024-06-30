@@ -232,12 +232,6 @@ def return_to_initial_balance(request):
 ### View que coordena transação deste Banco para os outros Bancos.
 ### Banco para transferir: bank_to_transfer. Bancos para pegar o valor: banks.
 ### Esta view pega os valores que o cliente deste Banco quer transferir a partir de outros bancos e transfere para o banco que escolher.
-
-"""
-Falta passar parâmetro que informa quais bancos e quais valores quer ser retirado desses bancos.
-sugestão: banks_and_values_withdraw
-"""
-
 def transfer(request, banks_and_values_withdraw, value_to_transfer, bank_to_transfer, client_to_transfer):
     if not request.user.is_authenticated:
         return redirect('sign_in_page')
@@ -253,6 +247,22 @@ def transfer(request, banks_and_values_withdraw, value_to_transfer, bank_to_tran
 
             if bank_client.in_transaction:
                 messages.error(request, "Cliente está em transação no momento. Aguarde.")
+                return redirect('transaction_page')
+            
+            # Verifica se a soma dos valores que quer transferir de cada banco é igual ao valor que quer transferir total.
+            soma = Decimal()
+            for key, value in banks_and_values_withdraw.items():
+                soma += Decimal(value)
+            if soma != value_to_transfer:
+                messages.error(request, "A soma dos valores a serem transferidos do banco não é igual ao valor a ser transferido total.")
+                return redirect('transaction_page')
+            
+            # Verifica se a transferência está acontecendo do bancoX para o bancoX
+            #  bank_to_transfer = (ip_to_transfer, port_to_transfer, name_bank)
+            ## verifica 
+
+            if (bank_to_transfer[2] in banks_and_values_withdraw) and request.user.username == client_to_transfer:
+                messages.error(request, f"O cliente {client_to_transfer} do {bank_to_transfer[2]} não pode transferir para ele mesmo (mesma conta e mesmo banco).")
                 return redirect('transaction_page')
 
             #{ip: saldo_bloqueado}
