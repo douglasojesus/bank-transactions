@@ -46,18 +46,13 @@ def my_account_page(request):
 def external_client_info(username):
     banks = Bank.objects.all()
     bank_balance_map = {}
-    print(banks.first())
     if banks.first():
         for bank in banks:
             url = f'http://{bank.ip}:{bank.port}/get_user_info/'
-            print(url)
-            #try:
             response = requests.post(url, data={'username': username}, timeout=5)
             if response.status_code == 200:
                 data = response.json()
                 bank_balance_map[bank.name] = data.get('balance')
-            #except (ConnectTimeout, ReadTimeout):
-            #    print("deu erro de connecttimeout ou readtimeout")
     return bank_balance_map
 
 
@@ -69,10 +64,7 @@ def transaction_page(request):
     else:
         user = Client.objects.filter(username=request.user.username).first()
         # fazer requisições para outros bancos para pegar informações desse cliente
-        print("até aqui ta de boa. transaction_page antes de pegar o bank_balance_map")
-        print(user.username)
         bank_balance_map = external_client_info(user.username)
-        print(bank_balance_map)
         if request.method == 'POST':
             form = TransactionForm(request.POST)
             if form.is_valid(): 
@@ -85,8 +77,6 @@ def transaction_page(request):
                     banks_and_values_withdraw = {} #banco: valor
 
                     banks_values_buffer = request.POST.get("banks_values") # banco1=200,banco2=20
-                    print(banks_values_buffer)
-                    print(len(banks_values_buffer))
                     key_value_buffer = ''
                     # FAZER FUNÇÃO EM SCRIPTS PARA RETORNAR VALOR 
                     for i in range(len(banks_values_buffer)):
@@ -105,7 +95,6 @@ def transaction_page(request):
                     banks_and_values_withdraw[nome_banco] = key_value_buffer
 
                     # Aqui você pode lidar com o dicionário como necessário
-                    print(banks_and_values_withdraw)
                     bank = Bank.objects.get(name=name_bank)
 
                     if name_bank and client_to_transfer:
