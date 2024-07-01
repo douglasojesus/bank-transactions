@@ -27,9 +27,7 @@ def lock_all_banks(bank_list, value, client, ip_bank_to_transfer):
 
     return accounts
 
-
-### Solicita desbloqueio de todos os bancos de dados de outros Bancos configurados.
-### Colocar em arquivo de scripts.
+# Solicita desbloqueio de todos os clientes de outros Bancos configurados.
 def unlock_all_banks(bank_list, client, ip_bank_to_transfer):
     client.balance = client.blocked_balance
     client.blocked_balance = Decimal(0)
@@ -62,6 +60,7 @@ def subtract_balance_all_banks(bank_client, bank_list, banks_and_values_withdraw
                 return False
     return True
 
+# Verifica o saldo do cliente logado em todos os outros bancos.
 def verify_balance_otherbanks(banks_and_values_withdraw, balances_from_other_banks):
     for key, value in banks_and_values_withdraw.items():
         if key != 'this':
@@ -69,6 +68,8 @@ def verify_balance_otherbanks(banks_and_values_withdraw, balances_from_other_ban
                 return False
     return True
 
+# Solicita a restauração dos saldos iniciais de um cliente dos bancos listados.
+# Realiza transações reversas e retorna um status de sucesso ou falha com o banco associado.
 def return_to_initial_balances(bank_client, bank_list, banks_and_values_withdraw):
     for key, value in banks_and_values_withdraw.items():
         if key == 'this':
@@ -76,10 +77,9 @@ def return_to_initial_balances(bank_client, bank_list, banks_and_values_withdraw
             bank_client.save()
         for bank in bank_list:
             if bank.name == key:
-                bank_obj = bank
-                break
-        url = f'http://{bank_obj.ip}:{bank_obj.port}/transaction/return_to_initial_balance/'
-        response = requests.post(url, data={'client': bank_client.username, 'value': value}, timeout=5)
-        if response.json().get('status') == 'ABORT':
-            return False, bank_obj
-    return True, bank_obj
+                url = f'http://{bank.ip}:{bank.port}/transaction/return_to_initial_balance/'
+                response = requests.post(url, data={'client': bank_client.username, 'value': value}, timeout=5)
+                if response.json().get('status') == 'ABORT':
+                    return False, bank
+                bank_buff = bank
+    return True, bank_buff

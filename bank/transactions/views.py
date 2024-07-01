@@ -155,13 +155,10 @@ def transfer(request, banks_and_values_withdraw, value_to_transfer, bank_to_tran
                 return redirect('transaction_page')
             
             # Verifica se a transferência está acontecendo do bancoX para o bancoX
-            #  bank_to_transfer = (ip_to_transfer, port_to_transfer, name_bank)
-            ## verifica 
-
             if (bank_to_transfer[2] in banks_and_values_withdraw) and request.user.username == client_to_transfer:
                 messages.error(request, f"O cliente {client_to_transfer} do {bank_to_transfer[2]} não pode transferir para ele mesmo (mesma conta e mesmo banco).")
                 return redirect('transaction_page')
-
+            
             #{ip: saldo_bloqueado}
             balances_from_other_banks = lock_all_banks(banks, value_to_transfer, bank_client, bank_to_transfer[0]) #accounts[bank.ip] = response.json.get('client_object').blocked_balance
             

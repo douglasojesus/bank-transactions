@@ -13,7 +13,6 @@
         <h2>Olá, {{ user.first_name }} {{ user.last_name }}. </h2>
 
         <ul class="balance-list">
-            <li>Neste banco (this) - R$ {{ user.balance }}</li>
             {% for bank, balance in bank_balance_map.items %}
                 <li>{{ bank }} - R$ {{ balance }}</li>
             {% endfor %}
@@ -25,7 +24,7 @@
             <select id="choice" name="choice" onchange="toggleRecipientFields(this.value)">
                 <option value="deposit">Depositar</option>
                 <option value="transfer">Transferir</option>
-                <option value="payment">Efetuar pagamento</option>
+                <option value="payment">Sacar</option>
             </select>
 
             <label for="value_to_transfer">Valor:</label>
@@ -39,10 +38,7 @@
                 <input type="text" id="client_to_transfer" name="client_to_transfer">
                 <br>
                 <label for="banks_values">Informe o banco e o valor (formato: this=valor,bancoB=valor):</label><br>
-                <input type="text" id="banks_values" name="banks_values" required>
-            </div>
-            <div class="bank-field">
-                
+                <input type="text" id="banks_values" name="banks_values">
             </div>
 
             <button type="submit">Efetuar transação</button>
@@ -52,7 +48,7 @@
 
         function toggleRecipientFields(choice) {
             var recipientFields = document.getElementById('recipient-fields');
-            if (choice === 'transfer' || choice === 'payment') {
+            if (choice === 'transfer') {
                 recipientFields.style.display = 'block';
             } else {
                 recipientFields.style.display = 'none';

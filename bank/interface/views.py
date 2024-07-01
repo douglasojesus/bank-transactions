@@ -9,6 +9,7 @@ from requests.exceptions import ConnectTimeout, ReadTimeout
 import requests
 from django.contrib.auth import get_user_model
 from transactions.views import CONFIGURED
+import logging
 
 
 def create_test(request):
@@ -95,7 +96,11 @@ def transaction_page(request):
                     banks_and_values_withdraw[nome_banco] = key_value_buffer
 
                     # Aqui você pode lidar com o dicionário como necessário
-                    bank = Bank.objects.get(name=name_bank)
+                    try:
+                        bank = Bank.objects.get(name=name_bank)
+                    except Bank.DoesNotExist:
+                        messages.error(request, "Nome de banco inválido. Escreva bancoX ou this.")
+                        return redirect('transaction_page')
 
                     if name_bank and client_to_transfer:
                         bank_to_transfer = (bank.ip, bank.port, name_bank)
@@ -113,7 +118,10 @@ def transaction_page(request):
                     return redirect('my_account_page')
 
                 elif action == 'payment':
-                    pass
+                    value_to_transfer = form.cleaned_data['value_to_transfer']
+                    user.balance -= value_to_transfer
+                    user.save()
+                    return redirect('my_account_page')
         else:
             form = TransactionForm()
 

@@ -74,21 +74,21 @@ while True:
             url = urls[i] + "configure/" 
             if i == 0:
                 data = {
-                    'name[]': ['bancoB', 'bancoC'],  # Lista de nomes dos bancos
-                    'ip[]': [container_ips[1], container_ips[2]],  # Lista de IPs dos bancos
-                    'port[]': ['8001', '8002']  # Lista de portas dos bancos
+                    'name[]': ['this', 'bancoB', 'bancoC'],  # Lista de nomes dos bancos
+                    'ip[]': [container_ips[0], container_ips[1], container_ips[2]],  # Lista de IPs dos bancos
+                    'port[]': ['8000', '8001', '8002']  # Lista de portas dos bancos
                 }
             elif i == 1:
                 data = {
-                    'name[]': ['bancoA', 'bancoC'],  # Lista de nomes dos bancos
-                    'ip[]': [container_ips[0], container_ips[2]],  # Lista de IPs dos bancos
-                    'port[]': ['8000', '8002']  # Lista de portas dos bancos
+                    'name[]': ['bancoA', 'this', 'bancoC'],  # Lista de nomes dos bancos
+                    'ip[]': [container_ips[0], container_ips[1], container_ips[2]],  # Lista de IPs dos bancos
+                    'port[]': ['8000', '8001', '8002']  # Lista de portas dos bancos
                 }
             elif i == 2:
                 data = {
-                    'name[]': ['bancoA', 'bancoB'],  # Lista de nomes dos bancos
-                    'ip[]': [container_ips[0], container_ips[1]],  # Lista de IPs dos bancos
-                    'port[]': ['8000', '8001']  # Lista de portas dos bancos
+                    'name[]': ['bancoA', 'bancoB', 'this'],  # Lista de nomes dos bancos
+                    'ip[]': [container_ips[0], container_ips[1], container_ips[2]],  # Lista de IPs dos bancos
+                    'port[]': ['8000', '8001', '8002']  # Lista de portas dos bancos
                 }
             registra_bancos(url, data)
         print("Tudo configurado!")
