@@ -4,7 +4,7 @@ Este é um sistema para processamento de transações bancárias, utilizando Doc
 
 # Resumo
 
-<p>Este relatório aborda a implementação de um sistema bancário distribuído utilizando o framework Django e o banco de dados PostgreSQL. São executados 3 servidores fixos no docker-compose. O servidor disponibiliza rotas para interface gráfica e para comunicação entre outros servidores. Com a interface gráfica, o usuário consegue efetuar configurações, manipulação de contas e realização de transferências. A comunicação entre servidores acontece para realizar transferência de valores de algum dos bancos do consórcio da conta de um usuário para algum outro banco. Este projeto foi desenvolvido como parte dos estudos da disciplina de Concorrência e Conectividade na Universidade Estadual de Feira de Santana (UEFS).</p>
+<p align="justify">Este relatório aborda a implementação de um sistema bancário distribuído utilizando o framework Django e o banco de dados PostgreSQL. São executados 3 servidores fixos no docker-compose. O servidor disponibiliza rotas para interface gráfica e para comunicação entre outros servidores. Com a interface gráfica, o usuário consegue efetuar configurações, manipulação de contas e realização de transferências. A comunicação entre servidores acontece para realizar transferência de valores de algum dos bancos do consórcio da conta de um usuário para algum outro banco. Este projeto foi desenvolvido como parte dos estudos da disciplina de Concorrência e Conectividade na Universidade Estadual de Feira de Santana (UEFS).</p>
 
 # Sumário
 
@@ -22,15 +22,17 @@ Este é um sistema para processamento de transações bancárias, utilizando Doc
 
 <p align="justify">Além das operações de transferência, o sistema permite que os usuários realizem depósitos e saques diretamente através da interface gráfica. Para depósitos, o saldo do usuário é incrementado pelo valor especificado, enquanto para saques, o saldo é decrementado. Estas operações são feitas apenas no banco coordenador. Então o usuário "Fulano" só poderá depositar e sacar valores no banco em que ele está manipulando. A comunicação atômica com outros servidores só acontece na transação de transferência, que pode ocorrer através de "n" bancos para algum outro banco.</p>
 
-
-
-
-
-
-
-
-
 # Realização de Transferência Entre Diferentes Contas
+
+## É possível transacionar entre diferentes bancos? Por exemplo, enviar do banco A, B e C, para o banco D?
+
+<p align="justify">O sistema bancário distribuído permite a realização de transações financeiras entre diferentes bancos participantes de um consórcio. Este consórcio é configurado apenas uma vez por meio de uma interface de administração, onde são registrados os nomes, endereços IP e portas dos bancos. Após a configuração inicial, esses bancos são reconhecidos mutuamente, garantindo que as operações subsequentes possam ocorrer de maneira integrada e segura.</p>
+
+
+
+<p align="justify"></p>
+
+
 
 # Comunicação Entre Servidores
 
@@ -39,6 +41,18 @@ Este é um sistema para processamento de transações bancárias, utilizando Doc
 # Algoritmo da Concorrência Distribuída
 
 ## Empregação
+
+<p align="justify">A arquitetura do sistema emprega um modelo de bloqueio de saldo, onde valores são temporariamente bloqueados nas contas dos clientes para assegurar a consistência das transações. Quando um banco recebe uma requisição de bloqueio, ele verifica se o cliente está atualmente em uma transação. Caso não esteja, o saldo do cliente é transferido para um saldo bloqueado, impedindo outras operações até a conclusão da transação. Esse método garante que os fundos necessários para a transação estejam disponíveis e reservados.</p>
+
+<p align="justify">Para realizar uma transação, o sistema segue um protocolo de Two-Phase Locking (2PL). Primeiro, o saldo é bloqueado em todos os bancos de onde os fundos serão retirados. Se qualquer banco falhar em bloquear o saldo necessário, a operação é abortada e os saldos previamente bloqueados são desbloqueados. Isso evita inconsistências caso algum banco não consiga participar da transação.</p>
+
+<p align="justify">Uma vez que todos os saldos são bloqueados com sucesso, inicia-se o processo de transferência. O banco destinatário recebe uma requisição para confirmar a transação, momento em que os valores são efetivamente transferidos dos saldos bloqueados dos bancos de origem para o saldo do cliente no banco destinatário. Se o banco destinatário não puder concluir a transação, um procedimento de rollback é iniciado, retornando os valores aos saldos originais nos bancos de origem.</p>
+
+<p align="justify">Durante todo o processo, diversas medidas de segurança são implementadas para garantir a atomicidade e consistência da transação. Em caso de falhas de comunicação, como tempos de espera excedidos (timeouts), o sistema tenta reverter as operações para o estado inicial, desbloqueando os saldos bloqueados e assegurando que nenhuma transação parcial ocorra.</p>
+
+<p align="justify">A coordenação dessas operações é gerenciada por funções específicas que realizam bloqueios, verificações de saldo e atualizações das contas dos clientes. A função lock_all_banks é responsável por enviar requisições de bloqueio para todos os bancos envolvidos, enquanto verify_balance_otherbanks assegura que os saldos bloqueados são suficientes para a transação. Caso algum banco reporte um saldo insuficiente, a operação é abortada antes de qualquer alteração permanente nas contas.</p>
+
+<p align="justify">Ao final da transação, se todos os passos forem concluídos com sucesso, os valores são efetivamente subtraídos dos saldos bloqueados dos bancos de origem e adicionados ao saldo do cliente no banco destinatário. Em caso de falhas, as funções de rollback garantem que todos os valores sejam restaurados aos seus estados originais, preservando a integridade do sistema.</p>
 
 ## Funcionamento
 
