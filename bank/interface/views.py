@@ -99,6 +99,8 @@ def transaction_page(request):
                     try:
                         bank = Bank.objects.get(name=name_bank)
                     except Bank.DoesNotExist:
+                        for bank in Bank.objects.all():
+                            logging.debug(f"{bank}")
                         messages.error(request, "Nome de banco inválido. Escreva bancoX ou this.")
                         return redirect('transaction_page')
 

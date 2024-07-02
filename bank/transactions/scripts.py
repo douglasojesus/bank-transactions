@@ -2,6 +2,7 @@ import requests
 from requests.exceptions import ConnectTimeout, ReadTimeout
 from django.views.decorators.csrf import csrf_exempt 
 from decimal import Decimal
+import logging
 
 # Função que solicita bloqueio de todos os bancos de dados de outros Bancos configurados.
 def lock_all_banks(bank_list, value, client, ip_bank_to_transfer):
@@ -11,9 +12,10 @@ def lock_all_banks(bank_list, value, client, ip_bank_to_transfer):
     client.save()
     accounts = {}
     for bank in bank_list:
-        if bank.ip != ip_bank_to_transfer: # Só bloqueia os bancos que vão enviar dinheiro. 
+        if bank.ip != ip_bank_to_transfer and (bank.name != 'this'): # Só bloqueia os bancos que vão enviar dinheiro e não o banco que está coordenando. 
             url = f'http://{bank.ip}:{bank.port}/transaction/lock/'
             try:
+                logging.debug("Antes de fazer requisição em lock_all_banks.")
                 response = requests.post(url, data={'value': value, 'client': client.username}, timeout=5)
                 if response.status_code != 200 or response.json().get('status') != 'LOCKED':
                     return False
@@ -35,7 +37,7 @@ def unlock_all_banks(bank_list, client, ip_bank_to_transfer):
     client.save()
     for bank in bank_list:
         url = f'http://{bank.ip}:{bank.port}/transaction/unlock/'
-        if bank.ip != ip_bank_to_transfer: # Só desbloqueia bancos que enviam
+        if bank.ip != ip_bank_to_transfer and (bank.name != 'this'): # Só desbloqueia bancos que enviam e não o banco que está coordenando. 
             try:
                 response = requests.post(url, data={'client': client.username}, timeout=5)
             except (ConnectTimeout, ReadTimeout):

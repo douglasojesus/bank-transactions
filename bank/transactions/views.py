@@ -66,21 +66,21 @@ def subtract(request):
 @csrf_exempt
 def lock(request):
     if request.method == "POST":
+        logging.debug("Tá recebendo a requisição.")
         client_to_lock = request.POST.get('client')
         value_to_lock = request.POST.get('value')
         try:
-            with transaction.atomic():
-                bank_client = Client.objects.select_for_update().get(username=client_to_lock)
-                if bank_client.in_transaction:
-                    return JsonResponse({'status': 'ABORT', 'message': 'IN_TRANSACTION'}, status=404)
-                bank_client.blocked_balance += Decimal(bank_client.balance)
-                bank_client.balance = 0
-                bank_client.in_transaction = True
-                bank_client.save()
-                return JsonResponse({'status': 'LOCKED', 'client': bank_client.username, 'blocked_balance': bank_client.blocked_balance}) # tem algum método para fazer to_json?
+            bank_client = Client.objects.select_for_update().get(username=client_to_lock)
+            if bank_client.in_transaction:
+                return JsonResponse({'status': 'ABORT', 'message': 'IN_TRANSACTION'}, status=404)
+            bank_client.blocked_balance += Decimal(bank_client.balance)
+            bank_client.balance = 0
+            bank_client.in_transaction = True
+            bank_client.save()
+            logging.debug("Na hora de fazer o return em lock.")
+            return JsonResponse({'status': 'LOCKED', 'client': bank_client.username, 'blocked_balance': bank_client.blocked_balance}) # tem algum método para fazer to_json?
         except Client.DoesNotExist:
             return JsonResponse({'status': 'ABORT'}, status=404)
-
     return JsonResponse({'message': 'Você precisa enviar uma requisição POST'}, status=400)
 
 # Requisição recebida por outro Banco para desbloquear este cliente deste Banco.

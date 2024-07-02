@@ -2,21 +2,39 @@
 
 Este é um sistema para processamento de transações bancárias, utilizando Docker e Docker Compose para configurar e executar três aplicativos separados.
 
-## Configuração Inicial
+# Gerenciamento de Contas
 
-### Clonando o Repositório
+# Realização de Transferência Entre Diferentes Contas
+
+# Comunicação Entre Servidores
+
+# Sincronização em um Único Servidor
+
+# Algoritmo da Concorrência Distribuída
+
+## Empregação
+
+## Funcionamento
+
+# Tratamento da Confiabilidade
+
+# Transação Concorrente
+
+# Configuração Inicial do Uso do Docker
+
+## Clonando o Repositório
 
 ```bash
 git clone https://github.com/douglasojesus/bank-transactions.git
 cd bank-transactions/
 ```
 
-### Construindo os contêineres:
+## Construindo os contêineres:
 ```bash
 docker-compose build
 ```
 
-### Executando o sistema:
+## Executando o sistema:
 ```bash
 docker-compose -p projeto up
 ```
@@ -26,7 +44,7 @@ Isso iniciará todos os contêineres necessários para os aplicativos.
 
 Para configurar os bancos de dados, você precisará dos IPs dos contêineres. Você pode encontrá-los usando o comando `docker ps` e, em seguida, inspecionando cada contêiner conforme mostrado abaixo:
 
-### Obtenção dos IPs dos Contêineres
+## Obtenção dos IPs dos Contêineres
 
 ```bash
 sudo docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' bank-transactions-app1-1
@@ -34,10 +52,10 @@ sudo docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}
 sudo docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' bank-transactions-app3-1
 ```
 
-### Acesso aos Servidores
+## Acesso aos Servidores
 Acesse cada servidor utilizando o IP correspondente para configurar os bancos de dados conforme necessário.
 
-### Testes Automatizados
+## Testes Automatizados
 Você pode usar o arquivo teste_automatizado/main.py para automatizar o acesso às URLs dos contêineres e testar o sistema.
 ```bash
 cd teste_automatizado/main.py
