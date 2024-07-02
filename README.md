@@ -26,13 +26,17 @@ Este é um sistema para processamento de transações bancárias, utilizando Doc
 
 ## É possível transacionar entre diferentes bancos? Por exemplo, enviar do banco A, B e C, para o banco D?
 
-<p align="justify">O sistema bancário distribuído permite a realização de transações financeiras entre diferentes bancos participantes de um consórcio. Este consórcio é configurado apenas uma vez por meio de uma interface de administração, onde são registrados os nomes, endereços IP e portas dos bancos. Após a configuração inicial, esses bancos são reconhecidos mutuamente, garantindo que as operações subsequentes possam ocorrer de maneira integrada e segura.</p>
+<p align="justify">É possível realizar transações entre diferentes bancos no sistema. Por exemplo, é viável enviar fundos dos bancos A, B e C para o banco D, caso existam 4 bancos registrados no consórcio. O sistema utiliza um protocolo de bloqueio em duas fases (Two-Phase Locking) para garantir a consistência e segurança das transações. Primeiro, os saldos são bloqueados nos bancos de origem (A, B e C) para assegurar que os fundos estão disponíveis. Em seguida, os valores são transferidos para o saldo do cliente no banco destinatário (D). Se ocorrer qualquer falha durante o processo, os saldos bloqueados são revertidos aos seus estados iniciais para manter a integridade das contas.</p>
 
+<p align="justify">Este consórcio é configurado apenas uma vez por meio de uma interface de administração, onde são registrados os nomes, endereços IP e portas dos bancos. Após a configuração inicial, esses bancos são reconhecidos mutuamente, garantindo que as operações subsequentes possam ocorrer de maneira integrada e segura.</p>
 
+<p align="justify">Além disso, também é possível realizar algumas possibilidades de transações:</p>
 
-<p align="justify"></p>
+- <p align="justify">Transações entre constas distintas no mesmo banco: clientes diferentes dentro do mesmo banco (por exemplo, A para A, com diferentes contas de clientes) podem realizar transações entre si, utilizando o mesmo protocolo de bloqueio para assegurar a integridade das transações.</p>
 
+- <p align="justify">Transações multi-origem para um único destino: fundos de múltiplos bancos (por exemplo, B e C) podem ser combinados e transferidos para um único banco de destino (por exemplo, A), quer sejam contas do mesmo cliente ou de diferentes clientes. Isso permite a agregação de fundos de várias fontes em uma única conta.</p>
 
+<p align="justify">Transações entre diferentes clientes em diferentes bancos: fundos podem ser transferidos de um cliente em um banco de origem (por exemplo, cliente X no banco A) para um cliente diferente em um banco de destino (por exemplo, cliente Y no banco B).</p>
 
 # Comunicação Entre Servidores
 
