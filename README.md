@@ -2,6 +2,12 @@
 
 Este é um sistema para processamento de transações bancárias, utilizando Docker e Docker Compose para configurar e executar três aplicativos separados.
 
+# Resumo
+
+<p>Este relatório aborda a implementação de um sistema bancário distribuído utilizando o framework Django e o banco de dados PostgreSQL. São executados 3 servidores fixos no docker-compose. O servidor disponibiliza rotas para interface gráfica e para comunicação entre outros servidores. Com a interface gráfica, o usuário consegue efetuar configurações, manipulação de contas e realização de transferências. A comunicação entre servidores acontece para realizar transferência de valores de algum dos bancos do consórcio da conta de um usuário para algum outro banco. Este projeto foi desenvolvido como parte dos estudos da disciplina de Concorrência e Conectividade na Universidade Estadual de Feira de Santana (UEFS).</p>
+
+# Sumário
+
 # Gerenciamento de Contas
 
 # Realização de Transferência Entre Diferentes Contas
@@ -19,6 +25,8 @@ Este é um sistema para processamento de transações bancárias, utilizando Doc
 # Tratamento da Confiabilidade
 
 # Transação Concorrente
+
+# Conclusão
 
 # Configuração Inicial do Uso do Docker
 
