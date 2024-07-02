@@ -38,6 +38,8 @@ Este é um sistema para processamento de transações bancárias, utilizando Doc
 
 <p align="justify">Transações entre diferentes clientes em diferentes bancos: fundos podem ser transferidos de um cliente em um banco de origem (por exemplo, cliente X no banco A) para um cliente diferente em um banco de destino (por exemplo, cliente Y no banco B).</p>
 
+<p align="justify">Essas possibilidades demonstram a flexibilidade do sistema em lidar com uma ampla gama de cenários de transação, garantindo ao mesmo tempo a segurança e a integridade dos dados através do uso do protocolo de bloqueio em duas fases.</p>
+
 # Comunicação Entre Servidores
 
 # Sincronização em um Único Servidor
