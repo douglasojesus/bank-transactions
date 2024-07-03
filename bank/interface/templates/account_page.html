@@ -11,7 +11,9 @@
 
 <div class="container">
     <div class="header-buttons">
+        {% if not user.is_joint_account %}
         <a href="{% url 'create_joint_account' %}" class="button">Criar conta conjunta</a>
+        {% endif %}
         <a href="{% url 'transaction_page' %}" class="button">Efetuar transação</a>
         <a href="{% url 'logout' %}" class="button">Sair</a>
     </div>

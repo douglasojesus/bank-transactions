@@ -59,10 +59,15 @@ def external_client_info(username):
             response = requests.post(url, data={'username': username}, timeout=5)
             if response.status_code == 200:
                 bank_balance_map[bank.name] = response.json().get('balance')
-                balance_joint = response.json().get('balance_joint')
-                if balance_joint is not None:
-                    key = bank.name + '_joint_account'
-                    bank_balance_map[key] = balance_joint
+                client_ja_one = response.json().get('client_ja_one')
+                client_ja_two = response.json().get('client_ja_two')
+                if client_ja_one is not None:
+                    key = bank.name + '_' + client_ja_one
+                    bank_balance_map[key] = response.json().get('client_ja_one_bb')
+                if client_ja_two is not None:
+                    key = bank.name + '_' + client_ja_two
+                    bank_balance_map[key] = response.json().get('client_ja_two_bb')
+
     return bank_balance_map
 
 
@@ -86,6 +91,8 @@ def transaction_page(request):
                     client_to_transfer = form.cleaned_data['client_to_transfer']
 
                     banks_and_values_withdraw = {} #banco: valor
+
+                    # trecho que popula o dicionário banks_and_values_withdraw
 
                     banks_values_buffer = request.POST.get("banks_values") # banco1=200,banco2=20
                     key_value_buffer = ''
@@ -117,7 +124,7 @@ def transaction_page(request):
                     if name_bank and client_to_transfer:
                         bank_to_transfer = (bank.ip, bank.port, name_bank)
                         # Redireciona para a função de transferência existente em transactions
-                        response = transfer(request, banks_and_values_withdraw, value_to_transfer, bank_to_transfer, client_to_transfer)
+                        response = transfer(request, banks_and_values_withdraw, value_to_transfer, bank_to_transfer, client_to_transfer, bank_balance_map)
                         return response
                     else:
                         messages.error(request, "Você precisa inserir o banco, a agência e o cliente.")
