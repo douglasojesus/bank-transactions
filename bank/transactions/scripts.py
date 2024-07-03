@@ -43,7 +43,6 @@ def unlock_all_banks(bank_list, client, ip_bank_to_transfer):
             except (ConnectTimeout, ReadTimeout):
                 continue
 
-
 # Solicita subtração dos valores dos bancos que efetuarão a transferência.
 def subtract_balance_all_banks(bank_client, bank_list, banks_and_values_withdraw):
     for key, value in banks_and_values_withdraw.items():
@@ -51,8 +50,10 @@ def subtract_balance_all_banks(bank_client, bank_list, banks_and_values_withdraw
             # subtrai inclusive desse banco atual se houver
             bank_client.blocked_balance -= Decimal(value)
             bank_client.save()
+
+        # elif key == 'this_joint_account': procurar novo cliente com esse nome e subtrair dele
         else:
-            for bank in bank_list:
+            for bank in bank_list: # bank_list não tem o nomeDoBanco_joint_account. tem que ver isso
                 if bank.name == key:
                     bank_obj = bank
                     break

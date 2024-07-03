@@ -53,6 +53,8 @@ def subtract(request):
         try:
             with transaction.atomic():
                 bank_client = Client.objects.select_for_update().get(username=client_to_subtract)
+                                # verificar se esse cliente tem conta conjunta, ou seja, 
+                # se existe um user_one ou user_two com o nome do cliente para subtrair, 
                 bank_client.blocked_balance -= Decimal(value_to_subtract)
                 bank_client.save()
                 return JsonResponse({'status': 'COMMITED'})
@@ -145,6 +147,12 @@ def return_to_initial_balance(request):
 # View que coordena transação deste Banco para os outros Bancos.
 # Banco para transferir: bank_to_transfer. Bancos para pegar o valor: banks.
 # Esta view pega os valores que o cliente deste Banco quer transferir a partir de outros bancos e transfere para o banco que escolher.
+
+
+
+# Agora precisa lidar com o banks_and_values_withdraw que pode ter o nome de algum banco + _joint_account
+# se tiver _joint_account, precisa tentar subtrair dessa conta tbm
+
 def transfer(request, banks_and_values_withdraw, value_to_transfer, bank_to_transfer, client_to_transfer):
     if not request.user.is_authenticated:
         return redirect('sign_in_page')
