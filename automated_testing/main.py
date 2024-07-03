@@ -33,10 +33,12 @@ urls = [
     f"http://{container_ips[2]}:8002/",
 ]
 
+names = ['bancoA', 'bancoB', 'bancoC']
+
 def exibe_urls(urls):
     if container_ips[0] != '':
-        for url in urls:
-            print(url)
+        for i in range(len(urls)):
+            print(names[i] + ': ' + urls[i])
     else:
         print("O seu contêiner não está em execução. Verifique isso antes de usar o menu.")
 
