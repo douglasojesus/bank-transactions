@@ -1,4 +1,4 @@
-# Bank Transactions System
+# Transações Bancárias Distribuidas 🏦
 
 Este é um sistema para processamento de transações bancárias, utilizando Docker e Docker Compose para configurar e executar três aplicações separadas.
 
