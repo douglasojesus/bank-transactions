@@ -13,6 +13,11 @@ class FormCreateClient(forms.ModelForm):
             raise forms.ValidationError("Este nome de usuário já está em uso. Por favor, escolha outro.")
         return username
     
+class FormCreateJointAccount(forms.Form):
+    second_person_username = forms.CharField()
+    email = forms.EmailField()
+    password = forms.CharField()
+    
 class FormLoginClient(forms.Form):
     username = forms.CharField()
     password = forms.CharField(widget=forms.PasswordInput)

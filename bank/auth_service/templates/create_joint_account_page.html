@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Joint Account Page</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/stylesignup.css' %}">
+</head>
+<body>
+
+<div class="container">
+    <h1>Sign Up Joint Account</h1>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">SIGN UP JOINT ACCOUNT</button>
+    </form>
+</div>
+<script>
+    {% if messages %}
+        {% for message in messages %}
+            alert("{{ message }}");
+        {% endfor %}
+    {% endif %}
+</script>
+
+</body>
+</html>

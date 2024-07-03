@@ -107,11 +107,24 @@ def unlock(request):
 @csrf_exempt
 def get_user_info(request):
     username = request.POST.get('username')
-    client = Client.objects.filter(username=username).first()
-    if client:
-        return JsonResponse({'balance': client.balance}, status=200)
-    else:
+    
+    try:
+        client = Client.objects.get(username=username)
+    except Client.DoesNotExist:
         return JsonResponse({'error': 'Client not found'}, status=404)
+
+    # Verificar se o cliente tem uma conta conjunta
+    client_joint_account = Client.objects.filter(user_one=username).first()
+
+    if client_joint_account is None:
+        client_joint_account = Client.objects.filter(user_two=username).first()
+
+    response_data = {'balance': client.balance}
+    
+    if client_joint_account:
+        response_data['balance_joint'] = client_joint_account.balance
+
+    return JsonResponse(response_data, status=200)
 
 # View responsável por atualizar o valor do saldo deste cliente baseado no valor do saldo anterior.
 @csrf_exempt

@@ -11,6 +11,12 @@ from django.contrib.auth import get_user_model
 from transactions.views import CONFIGURED
 import logging
 
+logging.basicConfig(level=logging.DEBUG)  # Configura o nível de log para DEBUG
+
+
+# Falta implementar conta conjunta. Se for conjunta, tem mais de um dono. Se o cliente tem conta naquele banco, 
+# ou é dono da conta conjunta, é apresentado na transaction_page. Tem que ver se o cliente não tem conta em um banco se dá erro.
+
 
 def create_test(request):
     clientes = {'douglas': ["Douglas", "Jesus", "douglas@gmail.com", "1234"],
@@ -52,8 +58,11 @@ def external_client_info(username):
             url = f'http://{bank.ip}:{bank.port}/get_user_info/'
             response = requests.post(url, data={'username': username}, timeout=5)
             if response.status_code == 200:
-                data = response.json()
-                bank_balance_map[bank.name] = data.get('balance')
+                bank_balance_map[bank.name] = response.json().get('balance')
+                balance_joint = response.json().get('balance_joint')
+                if balance_joint is not None:
+                    key = bank.name + '_joint_account'
+                    bank_balance_map[key] = balance_joint
     return bank_balance_map
 
 
@@ -66,6 +75,7 @@ def transaction_page(request):
         user = Client.objects.filter(username=request.user.username).first()
         # fazer requisições para outros bancos para pegar informações desse cliente
         bank_balance_map = external_client_info(user.username)
+        logging.debug(f"bank_balance_map: {bank_balance_map}")
         if request.method == 'POST':
             form = TransactionForm(request.POST)
             if form.is_valid(): 
