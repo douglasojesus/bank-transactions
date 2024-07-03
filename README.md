@@ -1,4 +1,6 @@
+<div align="center">
 # Transações Bancárias Distribuidas 🏦
+</div>
 
 Este é um sistema para processamento de transações bancárias, utilizando Docker e Docker Compose para configurar e executar três aplicações separadas.
 
@@ -36,7 +38,9 @@ Este é um sistema para processamento de transações bancárias, utilizando Doc
 
 - <p align="justify">Transações multi-origem para um único destino: fundos de múltiplos bancos (por exemplo, B e C) podem ser combinados e transferidos para um único banco de destino (por exemplo, A), quer sejam contas do mesmo cliente ou de diferentes clientes. Isso permite a agregação de fundos de várias fontes em uma única conta.</p>
 
-<p align="justify">Transações entre diferentes clientes em diferentes bancos: fundos podem ser transferidos de um cliente em um banco de origem (por exemplo, cliente X no banco A) para um cliente diferente em um banco de destino (por exemplo, cliente Y no banco B).</p>
+- <p align="justify">Transações entre diferentes clientes em diferentes bancos: fundos podem ser transferidos de um cliente em um banco de origem (por exemplo, cliente X no banco A) para um cliente diferente em um banco de destino (por exemplo, cliente Y no banco B).</p>
+
+- <p align="justify">Transações entre contas conjuntas: fundos podem ser transferidos de uma conta conjunta de um cliente em um banco de origem para um cliente no mesmo ou em outro banco de destino.</p>
 
 <p align="justify">Essas possibilidades demonstram a flexibilidade do sistema em lidar com uma ampla gama de cenários de transação, garantindo ao mesmo tempo a segurança e a integridade dos dados através do uso do protocolo de bloqueio em duas fases.</p>
 
