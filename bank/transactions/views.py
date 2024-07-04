@@ -69,15 +69,12 @@ def verify_balance(request, username):
 @csrf_exempt
 def subtract(request):
     if request.method == 'POST':
-        logging.debug("ENTREI NO SUBTRACTTTTTTTTTTT")
         client_to_subtract = request.POST.get('client')
         value_to_subtract = request.POST.get('value')
         try:
             with transaction.atomic():
                 bank_client = Client.objects.select_for_update().get(username=client_to_subtract)
-                logging.debug(f"bank_client.blocked_balance = {bank_client.blocked_balance}")
                 bank_client.blocked_balance -= Decimal(value_to_subtract)
-                logging.debug(f"bank_client.blocked_balance = {bank_client.blocked_balance}")
                 bank_client.save()
                 return JsonResponse({'status': 'COMMITED'})
         except:
@@ -102,7 +99,6 @@ def realize_lock(client, is_joint_account):
 @csrf_exempt
 def lock(request):
     if request.method == "POST":
-        logging.debug("Tá recebendo a requisição.")
         client_to_lock = request.POST.get('client')
         value_to_lock = request.POST.get('value')
         try:
@@ -115,17 +111,14 @@ def lock(request):
             client_joint_account_user_one_bb = None
             if client_joint_account_user_one is not None:
                 if not realize_lock(client_joint_account_user_one, True):
-                    logging.debug(f"está em transação? {client_joint_account_user_two.in_transaction}")
                     return JsonResponse({'status': 'ABORT', 'message': 'IN_TRANSACTION'}, status=404)
                 client_joint_account_user_one_bb = client_joint_account_user_one.blocked_balance
                 client_joint_account_user_one = client_joint_account_user_one.username
             
             client_joint_account_user_two = Client.objects.filter(user_two=client_to_lock).first()
             client_joint_account_user_two_bb = None
-            logging.debug(f"client_joint_account_user_two: {client_joint_account_user_two}")
             if client_joint_account_user_two is not None:
                 if not realize_lock(client_joint_account_user_two, True):
-                    logging.debug(f"está em transação? {client_joint_account_user_two.in_transaction}")
                     return JsonResponse({'status': 'ABORT', 'message': 'IN_TRANSACTION'}, status=404)
                 client_joint_account_user_two_bb = client_joint_account_user_two.blocked_balance
                 client_joint_account_user_two = client_joint_account_user_two.username
@@ -137,7 +130,6 @@ def lock(request):
                                  'client_ja_two': client_joint_account_user_two,
                                  'client_ja_two_bb': client_joint_account_user_two_bb,
                                 }
-            logging.debug(f"{json_response}")
 
             
             return JsonResponse(json_response)
@@ -168,21 +160,14 @@ def unlock(request):
         try:
             with transaction.atomic():
                 bank_client = Client.objects.select_for_update().get(username=client_to_unlock)
-                logging.debug("ENTREI NO UNLOCKKKKKKKKKKKKKKK")
                 realize_unlock(bank_client)
                 client_joint_account_user_one = Client.objects.filter(user_one=client_to_unlock).first()
                 if client_joint_account_user_one is not None:
-                    logging.debug(f"MEU USERNAME: {client_joint_account_user_one.username}, MEU SALDO ANTES DE DESBLOQUEAR (blocked_balance): {client_joint_account_user_one.blocked_balance}")
                     realize_unlock(client_joint_account_user_one)
-                    logging.debug(f"MEU USERNAME: {client_joint_account_user_one.username}, MEU SALDO DEPOIS DE DESBLOQUEAR (blocked_balance): {client_joint_account_user_one.blocked_balance}")
 
                 client_joint_account_user_two = Client.objects.filter(user_two=client_to_unlock).first()
                 if client_joint_account_user_two is not None:
-                    logging.debug(f"MEU USERNAME: {client_joint_account_user_two.username}, MEU SALDO ANTES DE DESBLOQUEAR (blocked_balance): {client_joint_account_user_two.blocked_balance}")
                     realize_unlock(client_joint_account_user_two)
-                    logging.debug(f"MEU USERNAME: {client_joint_account_user_two.username}, MEU SALDO DEPOIS DE DESBLOQUEAR (blocked_balance): {client_joint_account_user_two.blocked_balance}")
-
-                logging.debug(f"{client_joint_account_user_one} - {client_joint_account_user_two} - {client_to_unlock}")
 
                 return JsonResponse({'status': 'UNLOCKED'})
         except Client.DoesNotExist:
@@ -232,13 +217,11 @@ def return_to_initial_balance(request):
 
 def lock_this_account(bank_client, cache_file):
     cache_data = read_cache(bank_client.username, cache_file)
-    logging.debug(f'cache_data: {cache_data}')
     if cache_data is not None:
         is_in_transaction = cache_data['in_transaction']
         if is_in_transaction:
             return True
         else:
-            logging.debug(f'Cliente não está em transação no cache. Verificando no banco de dados...')
             if bank_client.in_transaction:
                 return True
             bank_client.in_transaction = True
@@ -267,7 +250,6 @@ def transfer(request, banks_and_values_withdraw, value_to_transfer, bank_to_tran
             banks = Bank.objects.all()
             bank_client = Client.objects.get(username=request.user)
 
-            logging.debug("passou do primeiro sleep")
 
             ## Inicia transação do Two Phase Locking, bloqueando todas as contas.
             is_in_transaction = lock_this_account(bank_client, 'cache.txt')
@@ -294,7 +276,6 @@ def transfer(request, banks_and_values_withdraw, value_to_transfer, bank_to_tran
             balances_from_other_banks = lock_all_banks(banks, value_to_transfer, bank_client, bank_to_transfer[0]) #accounts[bank.ip] = response.json.get('client_object').blocked_balance
             balances_from_other_banks = bank_balance_map
 
-            logging.debug(f'balances_from_other_banks: {balances_from_other_banks}')
             if not balances_from_other_banks:
                 messages.error(request, "Falha ao bloquear todos os bancos para a transação.")
                 is_returned = return_to_initial_balances(bank_client, banks, bank_balance_map)
@@ -321,7 +302,6 @@ def transfer(request, banks_and_values_withdraw, value_to_transfer, bank_to_tran
                 messages.error(request, "Não há saldo suficiente para efetuar essa transação.")
                 return redirect('transaction_page')
             
-            logging.debug("Já passei do sufficient funds")
 
             ## Inicia transação de dois commits. Primeiro commit: PREPARE.
             
@@ -335,7 +315,6 @@ def transfer(request, banks_and_values_withdraw, value_to_transfer, bank_to_tran
                 messages.error(request, f"O Banco {bank_to_transfer} precisou abortar a operação.")
                 return redirect('transaction_page')
 
-            logging.debug("Na hora de subtrair")
 
             # Se o banco que ta recebendo confirmou que o cliente existe, os saldos são subtraidos dos outros bancos 
             is_subtracted = subtract_balance_all_banks(bank_client, banks, banks_and_values_withdraw)
@@ -349,14 +328,12 @@ def transfer(request, banks_and_values_withdraw, value_to_transfer, bank_to_tran
                 messages.error(request, f"Operação abortada. Não foi possível subtrair valor de banco.")
                 return redirect('transaction_page')
             
-            logging.debug("Subtraiu.")
 
             ## Segundo commit: COMMIT.
             response = requests.post(url_request, data={'commit': 'True', 'value': value_to_transfer, 'client': client_to_transfer})
             
             ## Terceiro commit: ROLLBACK.
             if response.status_code != 200 or response.json().get('status') != 'COMMITTED':
-                logging.debug("rollback é feito! BBBBBBBBBBBBBBBBBBBBBBBBBBBBB")
                 # Se o banco receptor não conseguiu responder, retorna o valor inicial para os bancos.
                 is_returned = return_to_initial_balances(bank_client, banks, bank_balance_map)
                 if is_returned[0] == False:
@@ -407,7 +384,6 @@ def end_transaction(bank_client, cache_file):
 @csrf_exempt
 def receive(request):
     if request.method == "POST":
-        logging.debug("recebi o receive AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
         client_to_receive = request.POST.get('client')
         value_to_receive = request.POST.get('value')
         commit = request.POST.get('commit', 'False') == 'True'
@@ -419,7 +395,6 @@ def receive(request):
             
             if init:
                 bank_client.blocked_balance += Decimal(value_to_receive)
-                logging.debug(f"fiz o init AAAAAAAAAAAA blocked: {bank_client.blocked_balance} value: {value_to_receive}")
                 bank_client.save()
                 return JsonResponse({'status': 'READY'})
 
@@ -427,7 +402,6 @@ def receive(request):
                 bank_client.balance += Decimal(bank_client.blocked_balance)
                 bank_client.blocked_balance -= Decimal(0)
                 bank_client.save()
-                logging.debug(f"fiz o commit AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA balance: {bank_client.balance} blocked: {bank_client.blocked_balance}")
                 return JsonResponse({'status': 'COMMITTED'})
 
             if rollback:

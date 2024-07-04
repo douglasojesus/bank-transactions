@@ -63,7 +63,6 @@ def sign_up_page(request):
 def create_joint_account(request):
     if request.method == 'POST':
         form = FormCreateJointAccount(request.POST)
-        logging.debug(f"{form.errors}")
         if form.is_valid():
             User = get_user_model()
             
