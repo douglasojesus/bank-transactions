@@ -8,16 +8,31 @@ from accounts.models import Client
 
 # Função que solicita bloqueio de todos os bancos de dados de outros Bancos configurados.
 def lock_all_banks(bank_list, value, client, ip_bank_to_transfer):
+    # bloqueando a conta deste banco
     client.blocked_balance += Decimal(client.balance)
     client.balance = 0
     client.in_transaction = True
     client.save()
+    # bloqueando a conta conjunta deste banco
+    client_joint_account_user_one = Client.objects.filter(user_one=client.username).first()
+    if client_joint_account_user_one is not None:
+        client_joint_account_user_one.blocked_balance += Decimal(client_joint_account_user_one.balance)
+        client_joint_account_user_one.balance = 0
+        client_joint_account_user_one.in_transaction = True
+        client_joint_account_user_one.save()
+    client_joint_account_user_two = Client.objects.filter(user_two=client.username).first()
+    if client_joint_account_user_two is not None:
+        client_joint_account_user_two.blocked_balance += Decimal(client_joint_account_user_two.balance)
+        client_joint_account_user_two.balance = 0
+        client_joint_account_user_two.in_transaction = True
+        client_joint_account_user_two.save()
+
     accounts = {}
     for bank in bank_list:
-        if bank.ip != ip_bank_to_transfer and (bank.name != 'this'): # Só bloqueia os bancos que vão enviar dinheiro e não o banco que está coordenando. 
+
+        if (bank.name != 'this'): # Só bloqueia os bancos que vão enviar dinheiro e não o banco que está coordenando. 
             url = f'http://{bank.ip}:{bank.port}/transaction/lock/'
             try:
-                logging.debug("Antes de fazer requisição em lock_all_banks.")
                 response = requests.post(url, data={'value': value, 'client': client.username}, timeout=5)
                 if response.status_code != 200 or response.json().get('status') != 'LOCKED':
                     return False
@@ -32,6 +47,7 @@ def lock_all_banks(bank_list, value, client, ip_bank_to_transfer):
                     client_ja_two_bb = response.json().get('client_ja_two_bb')
                     key_dict = bank.name+'_'+client_ja_two
                     accounts[key_dict] = client_ja_two_bb
+                logging.debug(f"conta {client} {bank.name} pseudo-bloqueado. {accounts}")
             except (ConnectTimeout, ReadTimeout):
                 return False
         else:
@@ -47,10 +63,26 @@ def unlock_all_banks(bank_list, client, ip_bank_to_transfer):
     client.blocked_balance = Decimal(0)
     client.in_transaction = False
     client.save()
+    # desbloqueando a conta conjunta deste banco
+    client_joint_account_user_one = Client.objects.filter(user_one=client.username).first()
+    if client_joint_account_user_one is not None:
+        client_joint_account_user_one.balance = client_joint_account_user_one.blocked_balance
+        client_joint_account_user_one.blocked_balance = Decimal(0)
+        client_joint_account_user_one.in_transaction = False
+        client_joint_account_user_one.save()
+    client_joint_account_user_two = Client.objects.filter(user_two=client.username).first()
+    if client_joint_account_user_two is not None:
+        client_joint_account_user_two.balance = client_joint_account_user_two.blocked_balance
+        client_joint_account_user_two.blocked_balance = Decimal(0)
+        client_joint_account_user_two.in_transaction = False
+        client_joint_account_user_two.save()
+
     for bank in bank_list:
         url = f'http://{bank.ip}:{bank.port}/transaction/unlock/'
-        if bank.ip != ip_bank_to_transfer and (bank.name != 'this'): # Só desbloqueia bancos que enviam e não o banco que está coordenando. 
+        logging.debug(f'{bank.name} - {url} - {bank.ip} != {ip_bank_to_transfer}? and {bank.name} != "this"?')
+        if (bank.name != 'this'): # Só desbloqueia bancos que enviam e não o banco que está coordenando. 
             try:
+                logging.debug(f'{bank_list} - {bank} - {url}')
                 response = requests.post(url, data={'client': client.username}, timeout=5)
             except (ConnectTimeout, ReadTimeout):
                 continue
@@ -64,8 +96,8 @@ def subtract_balance_all_banks(bank_client, bank_list, banks_and_values_withdraw
             bank_client.save()
         elif key.split('_')[0] == 'this': # se for uma conta conjunta neste banco
             bank_client = Client.objects.get(username=key.split('_')[1])
+            logging.debug(f"blocked_balance no banco {key}: {bank_client.username}: {bank_client.blocked_balance} - {value}")
             bank_client.blocked_balance -= Decimal(value)
-            logging.debug(f"Entrei no elif que deveria em subtract_balance_all_banks {bank_client.blocked_balance}")
             bank_client.save()
         else:
             logging.debug(f"Entrei no else. Deu errado. {key.split('_')[0]} == this?")
