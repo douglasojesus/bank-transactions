@@ -126,9 +126,9 @@ def verify_balance_otherbanks(banks_and_values_withdraw, balances_from_other_ban
 
 # Solicita a restauração dos saldos iniciais de um cliente dos bancos listados.
 # Realiza transações reversas e retorna um status de sucesso ou falha com o banco associado.
-def return_to_initial_balances(bank_client, bank_list, banks_and_values_withdraw):
+def return_to_initial_balances(bank_client, bank_list, bank_initial_balance):
     try:
-        for key, value in banks_and_values_withdraw.items():
+        for key, value in bank_initial_balance.items():
             if key == 'this':
                 bank_client.blocked_balance = Decimal(value)
                 bank_client.save()

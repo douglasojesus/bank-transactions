@@ -19,17 +19,19 @@ logging.basicConfig(level=logging.DEBUG)  # Configura o nível de log para DEBUG
 
 CONFIGURED = False
 
-CACHE_FILE = f'{os.getcwd()}/transactions/cache.txt'
+CACHE_FILE = f'{os.getcwd()}/transactions/'
 
-def write_cache(username, data):
+def write_cache(username, data, cache_file):
+    cache_file = CACHE_FILE + cache_file
     cache_data = {username: data}
-    with open(CACHE_FILE, 'w') as f:
+    with open(cache_file, 'w') as f:
         json.dump(cache_data, f)
 
 # Função para ler do arquivo de cache
-def read_cache(username):
-    if os.path.exists(CACHE_FILE):
-        with open(CACHE_FILE, 'r') as f:
+def read_cache(username, cache_file):
+    cache_file = CACHE_FILE + cache_file
+    if os.path.exists(cache_file):
+        with open(cache_file, 'r') as f:
             cache_data = json.load(f)
             return cache_data.get(username, None)
     return None
@@ -83,9 +85,11 @@ def subtract(request):
     return JsonResponse({'message': 'Você precisa enviar uma requisição POST'}, status=400)
 
 
-def realize_lock(client):
+def realize_lock(client, is_joint_account):
     if client.in_transaction:
         return False
+    if is_joint_account:
+        lock_this_account(client, 'cache_joint.txt')
     client.blocked_balance += Decimal(client.balance)
     client.balance = Decimal(0)
     client.in_transaction = True
@@ -103,14 +107,14 @@ def lock(request):
         value_to_lock = request.POST.get('value')
         try:
             bank_client = Client.objects.select_for_update().get(username=client_to_lock)
-            if not realize_lock(bank_client):
+            if not realize_lock(bank_client, False):
                 return JsonResponse({'status': 'ABORT', 'message': 'IN_TRANSACTION'}, status=404)
             
             # Verificar se o cliente tem uma conta conjunta
             client_joint_account_user_one = Client.objects.filter(user_one=client_to_lock).first()
             client_joint_account_user_one_bb = None
             if client_joint_account_user_one is not None:
-                if not realize_lock(client_joint_account_user_one):
+                if not realize_lock(client_joint_account_user_one, True):
                     logging.debug(f"está em transação? {client_joint_account_user_two.in_transaction}")
                     return JsonResponse({'status': 'ABORT', 'message': 'IN_TRANSACTION'}, status=404)
                 client_joint_account_user_one_bb = client_joint_account_user_one.blocked_balance
@@ -120,7 +124,7 @@ def lock(request):
             client_joint_account_user_two_bb = None
             logging.debug(f"client_joint_account_user_two: {client_joint_account_user_two}")
             if client_joint_account_user_two is not None:
-                if not realize_lock(client_joint_account_user_two):
+                if not realize_lock(client_joint_account_user_two, True):
                     logging.debug(f"está em transação? {client_joint_account_user_two.in_transaction}")
                     return JsonResponse({'status': 'ABORT', 'message': 'IN_TRANSACTION'}, status=404)
                 client_joint_account_user_two_bb = client_joint_account_user_two.blocked_balance
@@ -142,9 +146,11 @@ def lock(request):
     return JsonResponse({'message': 'Você precisa enviar uma requisição POST'}, status=400)
 
 
-def realize_unlock(client):
+def realize_unlock(client, is_joint_account):
     if not client.balance: # se tiver balance significa que o cliente tem saldo disponível, então recebeu a transferência, então nao recebe desbloqueio
         client.balance = client.blocked_balance
+    if is_joint_account:
+        end_transaction(client, 'cache_joint.txt')
     client.blocked_balance = Decimal(0)
     client.in_transaction = False
     client.save()
@@ -224,16 +230,35 @@ def return_to_initial_balance(request):
             return JsonResponse({'status': 'ABORT'}, status=404)
     return JsonResponse({'message': 'Você precisa enviar uma requisição POST'}, status=400)
 
+def lock_this_account(bank_client, cache_file):
+    cache_data = read_cache(bank_client.username, cache_file)
+    logging.debug(f'cache_data: {cache_data}')
+    if cache_data is not None:
+        is_in_transaction = cache_data['in_transaction']
+        if is_in_transaction:
+            return True
+        else:
+            logging.debug(f'Cliente não está em transação no cache. Verificando no banco de dados...')
+            if bank_client.in_transaction:
+                return True
+            bank_client.in_transaction = True
+            bank_client.save()
+            bank_client_cache = {'in_transaction': True}
+            write_cache(bank_client.username, bank_client_cache, cache_file)
+    else:
+        if bank_client.in_transaction:
+            return True
+        bank_client.in_transaction = True
+        bank_client.save()
+        bank_client_cache = {'in_transaction': True}
+        write_cache(bank_client.username, bank_client_cache, cache_file)
+
 # View que coordena transação deste Banco para os outros Bancos.
 # Banco para transferir: bank_to_transfer. Bancos para pegar o valor: banks.
 # Esta view pega os valores que o cliente deste Banco quer transferir a partir de outros bancos e transfere para o banco que escolher.
 
-
-
-# Agora precisa lidar com o banks_and_values_withdraw que pode ter o nome de algum banco + _joint_account
-# se tiver _joint_account, precisa tentar subtrair dessa conta tbm
-# para isso, vamos verificar em quais bancos a pessoa tem joint_account
-
+# bank_balance_map : dicionario com os saldos antes das transações
+# banks_and_values_withdraw : dicionario com os valores a serem retirado das contas
 def transfer(request, banks_and_values_withdraw, value_to_transfer, bank_to_transfer, client_to_transfer, bank_balance_map):
     if not request.user.is_authenticated:
         return redirect('sign_in_page')
@@ -245,32 +270,12 @@ def transfer(request, banks_and_values_withdraw, value_to_transfer, bank_to_tran
             logging.debug("passou do primeiro sleep")
 
             ## Inicia transação do Two Phase Locking, bloqueando todas as contas.
-            cache_data = read_cache(bank_client.username)
-            logging.debug(f'cache_data: {cache_data}')
-            if cache_data is not None:
-                is_in_transaction = cache_data['in_transaction']
-                if is_in_transaction:
-                    messages.error(request, "Cliente está em transação no momento. Aguarde.")
-                    return redirect('transaction_page')
-                else:
-                    logging.debug(f'Cliente não está em transação no cache. Verificando no banco de dados...')
-                    if bank_client.in_transaction:
-                        messages.error(request, "Cliente está em transação no momento. Aguarde.")
-                        return redirect('transaction_page')  
-                    bank_client.in_transaction = True
-                    bank_client.save()
-                    bank_client_cache = {'in_transaction': True}
-                    write_cache(bank_client.username, bank_client_cache)
-            else:
-                if bank_client.in_transaction:
-                    messages.error(request, "Cliente está em transação no momento. Aguarde.")
-                    return redirect('transaction_page')
-                bank_client.in_transaction = True
-                bank_client.save()
-                bank_client_cache = {'in_transaction': True}
-                write_cache(bank_client.username, bank_client_cache)
+            is_in_transaction = lock_this_account(bank_client, 'cache.txt')
+            if is_in_transaction:
+                messages.error(request, "Cliente está em transação no momento. Aguarde.")
+                return redirect('transaction_page')
 
-            #time.sleep(10)
+            time.sleep(10)
 
             # Verifica se a soma dos valores que quer transferir de cada banco é igual ao valor que quer transferir total.
             soma = Decimal()
@@ -289,12 +294,10 @@ def transfer(request, banks_and_values_withdraw, value_to_transfer, bank_to_tran
             balances_from_other_banks = lock_all_banks(banks, value_to_transfer, bank_client, bank_to_transfer[0]) #accounts[bank.ip] = response.json.get('client_object').blocked_balance
             balances_from_other_banks = bank_balance_map
 
-            
-
             logging.debug(f'balances_from_other_banks: {balances_from_other_banks}')
             if not balances_from_other_banks:
                 messages.error(request, "Falha ao bloquear todos os bancos para a transação.")
-                is_returned = return_to_initial_balances(bank_client, banks, banks_and_values_withdraw)
+                is_returned = return_to_initial_balances(bank_client, banks, bank_balance_map)
                 if is_returned[0] == False:
                     messages.error(request, f"O banco {is_returned[1]} não conseguiu retornar o valor para a conta depois do erro de transação.")
                     return redirect('transaction_page')
@@ -310,6 +313,11 @@ def transfer(request, banks_and_values_withdraw, value_to_transfer, bank_to_tran
             is_sufficient_funds = verify_balance_otherbanks(banks_and_values_withdraw, balances_from_other_banks)
 
             if not is_sufficient_funds:
+                is_returned = return_to_initial_balances(bank_client, banks, bank_balance_map)
+                if is_returned[0] == False:
+                    messages.error(request, f"O banco {is_returned[1]} não conseguiu retornar o valor para a conta depois do erro de transação.")
+                unlock_all_banks(banks, bank_client, bank_to_transfer[0])
+                end_transaction(bank_client, 'cache.txt')
                 messages.error(request, "Não há saldo suficiente para efetuar essa transação.")
                 return redirect('transaction_page')
             
@@ -333,7 +341,7 @@ def transfer(request, banks_and_values_withdraw, value_to_transfer, bank_to_tran
             is_subtracted = subtract_balance_all_banks(bank_client, banks, banks_and_values_withdraw)
             if not is_subtracted:
                 # Se não conseguiu subtrair o valor, aborta.
-                is_returned = return_to_initial_balances(bank_client, banks, banks_and_values_withdraw)
+                is_returned = return_to_initial_balances(bank_client, banks, bank_balance_map)
                 if is_returned[0] == False:
                     messages.error(request, f"O banco {is_returned[1]} não conseguiu retornar o valor para a conta depois do erro de transação.")
                     return redirect('transaction_page')
@@ -350,7 +358,7 @@ def transfer(request, banks_and_values_withdraw, value_to_transfer, bank_to_tran
             if response.status_code != 200 or response.json().get('status') != 'COMMITTED':
                 logging.debug("rollback é feito! BBBBBBBBBBBBBBBBBBBBBBBBBBBBB")
                 # Se o banco receptor não conseguiu responder, retorna o valor inicial para os bancos.
-                is_returned = return_to_initial_balances(bank_client, banks, banks_and_values_withdraw)
+                is_returned = return_to_initial_balances(bank_client, banks, bank_balance_map)
                 if is_returned[0] == False:
                     messages.error(request, f"O banco {is_returned[1]} não conseguiu retornar o valor para a conta depois do erro de transação.")
                     return redirect('transaction_page')
@@ -365,33 +373,33 @@ def transfer(request, banks_and_values_withdraw, value_to_transfer, bank_to_tran
             bank_client.save()
             messages.success(request, f"Valor de R${value_to_transfer} transferido com sucesso!")
 
-            end_transaction(bank_client)
+            end_transaction(bank_client, 'cache.txt')
 
             return redirect('transaction_page')
         
         except ConnectTimeout:
-            is_returned = return_to_initial_balances(bank_client, banks, banks_and_values_withdraw)
+            is_returned = return_to_initial_balances(bank_client, banks, bank_balance_map)
             if is_returned[0] == False:
                 messages.error(request, f"O banco {is_returned[1]} não conseguiu retornar o valor para a conta depois do erro de transação.")
             unlock_all_banks(banks, bank_client, bank_to_transfer[0])
             messages.error(request, f"ConnectTimeout Error: O host {bank_to_transfer[0]} pode estar inacessível ou indisponível. Pode haver um firewall ou configuração de rede que bloqueei a conexão. O serviço na porta {bank_to_transfer[1]} pode não estar em execução ou não estar respondendo. O tempo limite de conexão pode ser muito curto para a rede ou servidor em questão.")
-            end_transaction(bank_client)
+            end_transaction(bank_client, 'cache.txt')
             return redirect('transaction_page')
         
         except ReadTimeout:
-            is_returned = return_to_initial_balances(bank_client, banks, banks_and_values_withdraw)
+            is_returned = return_to_initial_balances(bank_client, banks, bank_balance_map)
             if is_returned[0] == False:
                 messages.error(request, f"O banco {is_returned[1]} não conseguiu retornar o valor para a conta depois do erro de transação.")
             unlock_all_banks(banks, bank_client, bank_to_transfer[0])
             messages.error(request, f"A leitura dos dados da resposta da requisição excedeu o tempo limite especificado.")
-            end_transaction(bank_client)
+            end_transaction(bank_client, 'cache.txt')
             return redirect('transaction_page')
         
-def end_transaction(bank_client):
-    cache_data = read_cache(bank_client.username)
+def end_transaction(bank_client, cache_file):
+    cache_data = read_cache(bank_client.username, cache_file)
     if cache_data is not None:
         cache_data['in_transaction'] = False
-        write_cache(bank_client.username, cache_data)
+        write_cache(bank_client.username, cache_data, cache_file)
 
 
 ### Cliente só recebe valor se não estiver em transação. Nesta etapa, o valor já está bloqueado.
@@ -406,7 +414,7 @@ def receive(request):
         rollback = request.POST.get('rollback', 'False') == 'True'
         init = request.POST.get('init', 'False') == 'True'
 
-        try:    
+        try:
             bank_client = Client.objects.get(username=client_to_receive)
             
             if init:
