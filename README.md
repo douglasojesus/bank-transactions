@@ -55,14 +55,14 @@ Este é um sistema para processamento de transações bancárias, utilizando Doc
 <p align="justify">A API REST permite que os bancos enviem e recebam requisições HTTP, garantindo uma comunicação padronizada e eficiente. O protocolo 2PC é implementado para assegurar a consistência e a atomicidade das transações, realizando operações em duas fases: prepare e commit. </p>
 
 <p align="center">
-  <img src="docs/images/commit_example.png" alt="Figura 1.">
+  <img src="docs/images/commit_example.webp" alt="Figura 1.">
   Figura 1. Two-Phase Commit Protocol. Commit Phase.
 </p>
 
 <p align="justify">Na fase prepare, os bancos envolvidos verificam se podem concluir a transação, bloqueando os recursos necessários; na fase commit, a transação é confirmada e os recursos são efetivamente transferidos. Se houver algum problema na transação em algum dos passos, todos os bancos são abortados da operação.</p> 
 
 <p align="center">
-  <img src="docs/images/abort_example.png" alt="Figura 1.">
+  <img src="docs/images/abort_example.webp" alt="Figura 2.">
   Figura 2. Two-Phase Commit Protocol. Abort Phase.
 </p>
 
