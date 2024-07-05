@@ -116,6 +116,23 @@ cd teste_automatizado/main.py
 sudo python3 main.py
 ```
 
+### Teste de 'stop' e 'start' de um dos servidores
+
+Para encerrar algum container basta usar o comando:
+```bash
+docker stop container_id
+```
+Para fazer o servidor retornar:
+```bash
+docker start container_id
+```
+Para verificar o 'container_id':
+```bash
+docker ps -a
+```
+
+## Conceitos a serem abordados
+
 Conservative Two-Phase Locking (C2PL)
 
 O Conservative Two-Phase Locking é um protocolo de controle de concorrência que requer que uma transação adquira todos os bloqueios necessários antes de iniciar sua execução. Ele difere do Two-Phase Locking (2PL) no sentido de que todos os bloqueios são obtidos antes de qualquer operação de leitura ou escrita ocorrer.
