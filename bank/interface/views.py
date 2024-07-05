@@ -13,11 +13,6 @@ import logging
 
 logging.basicConfig(level=logging.DEBUG)  # Configura o nível de log para DEBUG
 
-
-# Falta implementar conta conjunta. Se for conjunta, tem mais de um dono. Se o cliente tem conta naquele banco, 
-# ou é dono da conta conjunta, é apresentado na transaction_page. Tem que ver se o cliente não tem conta em um banco se dá erro.
-
-
 def create_test(request):
     clientes = {'douglas': ["Douglas", "Jesus", "douglas@gmail.com", "1234"],
                 'fulano': ["Fulano", "Silva", "fulano@gmail.com", "1234"],
@@ -56,7 +51,10 @@ def external_client_info(username):
     if banks.first():
         for bank in banks:
             url = f'http://{bank.ip}:{bank.port}/get_user_info/'
-            response = requests.post(url, data={'username': username}, timeout=5)
+            try:
+                response = requests.post(url, data={'username': username}, timeout=3)
+            except: # se algum dos bancos não responder, ele não participa das transações
+                response.status_code = 404
             if response.status_code == 200:
                 bank_balance_map[bank.name] = response.json().get('balance')
                 client_ja_one = response.json().get('client_ja_one')
@@ -67,7 +65,6 @@ def external_client_info(username):
                 if client_ja_two is not None:
                     key = bank.name + '_' + client_ja_two
                     bank_balance_map[key] = response.json().get('client_ja_two_bb')
-
     return bank_balance_map
 
 
@@ -111,12 +108,18 @@ def transaction_page(request):
                     
                     banks_and_values_withdraw[nome_banco] = key_value_buffer
 
-                    # Aqui você pode lidar com o dicionário como necessário
+                    # Verifica se o nome do banco é válido
                     try:
                         bank = Bank.objects.get(name=name_bank)
                     except Bank.DoesNotExist:
                         messages.error(request, "Nome de banco inválido. Escreva bancoX ou this.")
                         return redirect('transaction_page')
+                    
+                    # Verifica se o banco está disponível no momento
+                    for key, values in banks_and_values_withdraw.items(): 
+                        if key not in bank_balance_map:
+                            messages.error(request, "Esse banco não está conectado no momento. Verifique a conexão.")
+                            return redirect('transaction_page')
 
                     if name_bank and client_to_transfer:
                         bank_to_transfer = (bank.ip, bank.port, name_bank)
