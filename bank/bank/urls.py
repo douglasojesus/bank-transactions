@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.urls import path, include
 from interface.views import home_page, flush, create_test
 from auth_service.views import create_joint_account
-from transactions.views import configure, get_user_info
+from transactions.views import configure, get_user_info, get_container_ip
 
 urlpatterns = [
     path('admin/', admin.site.urls),

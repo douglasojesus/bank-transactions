@@ -32,6 +32,7 @@ def lock_all_banks(bank_list, value, client, ip_bank_to_transfer):
 
         if (bank.name != 'this'): # Só bloqueia os bancos que vão enviar dinheiro e não o banco que está coordenando. 
             url = f'http://{bank.ip}:{bank.port}/transaction/lock/'
+            logging.debug(f"{url}")
             try:
                 response = requests.post(url, data={'value': value, 'client': client.username}, timeout=5)
                 if response.status_code != 200 or response.json().get('status') != 'LOCKED':
@@ -50,9 +51,7 @@ def lock_all_banks(bank_list, value, client, ip_bank_to_transfer):
             except (ConnectTimeout, ReadTimeout):
                 return False
         else:
-            url = f'http://{bank.ip}:{bank.port}/transaction/verify_balance/{client.username}/'
-            response = requests.get(url)
-            accounts[bank.name] = response.json().get('balance') 
+            accounts['this'] = Client.objects.get(username=client.username).blocked_balance
 
     return accounts
 
@@ -89,7 +88,9 @@ def subtract_balance_all_banks(bank_client, bank_list, banks_and_values_withdraw
     for key, value in banks_and_values_withdraw.items():
         if key == 'this':
             # subtrai inclusive desse banco atual se houver
+            logging.debug(f'ta subtraindo aqui? {bank_client.blocked_balance}')
             bank_client.blocked_balance -= Decimal(value)
+            logging.debug(f'ta subtraindo aqui? {bank_client.blocked_balance}')
             bank_client.save()
         elif key.split('_')[0] == 'this': # se for uma conta conjunta neste banco
             bank_client = Client.objects.get(username=key.split('_')[1])
@@ -122,6 +123,7 @@ def verify_balance_otherbanks(banks_and_values_withdraw, balances_from_other_ban
 # Solicita a restauração dos saldos iniciais de um cliente dos bancos listados.
 # Realiza transações reversas e retorna um status de sucesso ou falha com o banco associado.
 def return_to_initial_balances(bank_client, bank_list, bank_initial_balance):
+    bank_buff = ''
     try:
         for key, value in bank_initial_balance.items():
             if key == 'this':
@@ -129,6 +131,7 @@ def return_to_initial_balances(bank_client, bank_list, bank_initial_balance):
                 bank_client.save()
             for bank in bank_list:
                 url = f'http://{bank.ip}:{bank.port}/transaction/return_to_initial_balance/'
+                logging.debug(f'{url}')
                 if bank.name == key:
                     response = requests.post(url, data={'client': bank_client.username, 'value': value}, timeout=5)
                     if response.json().get('status') == 'ABORT':
@@ -142,6 +145,7 @@ def return_to_initial_balances(bank_client, bank_list, bank_initial_balance):
 
         return True, bank_buff
     except (ReadTimeout, ConnectTimeout):
+        logging.debug('deu readtimeout no return_to_initial_balances')
         return False, bank_buff
         
 

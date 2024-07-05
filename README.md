@@ -70,6 +70,16 @@ Este é um sistema para processamento de transações bancárias, utilizando Doc
 
 # Sincronização em um Único Servidor
 
+## Como tratou a concorrência em um único servidor, quando chegam mais de um pedido de transação a um único servidor?
+
+A sincronização de transações em um único servidor que atende múltiplos pedidos simultâneos é um desafio crítico em sistemas de bancos de dados. No contexto do problema fornecido, a concorrência foi tratada utilizando-se várias técnicas, principalmente as transações atômicas e o bloqueio de registros, para assegurar a consistência e a integridade dos dados.
+
+Com a transação atômica implementada, há a garantia que o bloco de código dentro da transação seja executado completamente ou não seja executado de forma alguma. Em caso de falha em qualquer ponto dentro da transação, todas as operações realizadas até aquele ponto são revertidas, garantindo assim a atomicidade da transação. Não apenas no banco coordenador, mas também nos bancos que fazem parte da transação. Além disso, o método select_for_update() é usado para bloquear os registros de clientes enquanto a transação está em andamento. Este bloqueio impede que outros processos modifiquem esses registros até que a transação seja concluída, prevenindo condições de corrida.
+
+No caso de um único servidor, é possível que clientes diferentes efetuem transações no mesmo instante. O servidor Django utilizado permite o acesso assíncrono de requisições. Para isso, é necessário que os clientes se autentiquem e realizem as transações. 
+
+Por outro lado, se em uma única conta há tentativa de mais de duas transações ao mesmo tempo, alguma das transações é bloqueada. Isso acontece comumente em contas conjuntas, quando algum cliente A tenta efetuar uma transação com a conta AB e o cliente B também, no mesmo instante. Quando isso ocorre, uma das transações é bloqueada devido ao bloqueio iniciado pela primeira transação. Para isso, é utilizado uma memória cache.
+
 # Algoritmo da Concorrência Distribuída
 
 ## Empregação
