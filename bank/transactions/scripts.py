@@ -6,7 +6,6 @@ import logging
 from django.contrib import messages
 from accounts.models import Client
 
-
 # Função que solicita bloqueio de todos os bancos de dados de outros Bancos configurados.
 def lock_all_banks(bank_list, value, client, ip_bank_to_transfer):
     # bloqueando a conta deste banco

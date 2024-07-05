@@ -21,7 +21,7 @@ services:
       - "8000:8000"
     volumes:
       - ./bank:/bank
-      - ./wait-for-it.sh:/wait-for-it.sh
+      - ./wait-for-it.sh:/wait-for-it.sh 
     command: >
       sh -c "./wait-for-it.sh db1:5432 -- 
              python manage.py migrate && 
@@ -56,7 +56,7 @@ services:
       - "8001:8001"
     volumes:
       - ./bank:/bank
-      - ./wait-for-it.sh:/wait-for-it.sh
+      - ./wait-for-it.sh:/wait-for-it.sh 
     command: >
       sh -c "./wait-for-it.sh db2:5433 -- 
              python manage.py migrate && 
@@ -91,7 +91,7 @@ services:
       - "8002:8002"
     volumes:
       - ./bank:/bank
-      - ./wait-for-it.sh:/wait-for-it.sh
+      - ./wait-for-it.sh:/wait-for-it.sh 
     command: >
       sh -c "./wait-for-it.sh db3:5434 -- 
              python manage.py migrate && 
@@ -114,3 +114,4 @@ volumes:
 networks:
   projeto-network:
     driver: bridge
+

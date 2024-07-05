@@ -145,5 +145,3 @@ def transaction_page(request):
             form = TransactionForm()
 
         return render(request, 'transaction_page.html', {'form': form, 'user': user, 'bank_balance_map': bank_balance_map})
-
-
