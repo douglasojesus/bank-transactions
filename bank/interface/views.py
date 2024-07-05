@@ -51,20 +51,22 @@ def external_client_info(username):
     if banks.first():
         for bank in banks:
             url = f'http://{bank.ip}:{bank.port}/get_user_info/'
+            response = ''
             try:
                 response = requests.post(url, data={'username': username}, timeout=3)
-            except: # se algum dos bancos não responder, ele não participa das transações
-                response.status_code = 404
-            if response.status_code == 200:
-                bank_balance_map[bank.name] = response.json().get('balance')
-                client_ja_one = response.json().get('client_ja_one')
-                client_ja_two = response.json().get('client_ja_two')
-                if client_ja_one is not None:
-                    key = bank.name + '_' + client_ja_one
-                    bank_balance_map[key] = response.json().get('client_ja_one_bb')
-                if client_ja_two is not None:
-                    key = bank.name + '_' + client_ja_two
-                    bank_balance_map[key] = response.json().get('client_ja_two_bb')
+                if response.status_code == 200:
+                    bank_balance_map[bank.name] = response.json().get('balance')
+                    client_ja_one = response.json().get('client_ja_one')
+                    client_ja_two = response.json().get('client_ja_two')
+                    if client_ja_one is not None:
+                        key = bank.name + '_' + client_ja_one
+                        bank_balance_map[key] = response.json().get('client_ja_one_bb')
+                    if client_ja_two is not None:
+                        key = bank.name + '_' + client_ja_two
+                        bank_balance_map[key] = response.json().get('client_ja_two_bb')
+            except:
+                continue
+            
     return bank_balance_map
 
 

@@ -5,27 +5,95 @@ from decimal import Decimal
 import logging
 from django.contrib import messages
 from accounts.models import Client
+import os
+import json
+
+CACHE_FILE = f'{os.getcwd()}/transactions/'
+
+def write_cache(username, data, cache_file):
+    cache_file = CACHE_FILE + cache_file
+    cache_data = {username: data}
+    with open(cache_file, 'w') as f:
+        json.dump(cache_data, f)
+
+# Função para ler do arquivo de cache
+def read_cache(username, cache_file):
+    cache_file = CACHE_FILE + cache_file
+    if os.path.exists(cache_file):
+        with open(cache_file, 'r') as f:
+            cache_data = json.load(f)
+            return cache_data.get(username, None)
+    return None
+
+def lock_this_account(bank_client, cache_file):
+    cache_data = read_cache(bank_client.username, cache_file)
+    if cache_data is not None:
+        is_in_transaction = cache_data['in_transaction']
+        if is_in_transaction:
+            return True
+        else:
+            if bank_client.in_transaction:
+                return True
+            bank_client.in_transaction = True
+            bank_client.save()
+            bank_client_cache = {'in_transaction': True}
+            write_cache(bank_client.username, bank_client_cache, cache_file)
+    else:
+        if bank_client.in_transaction:
+            return True
+        bank_client.in_transaction = True
+        bank_client.save()
+        bank_client_cache = {'in_transaction': True}
+        write_cache(bank_client.username, bank_client_cache, cache_file)
+
+def realize_lock(client, is_joint_account):
+    logging.debug(f'lock_this_account: {client}')
+    if client.in_transaction:
+        return False
+    if is_joint_account:
+        is_in_transaction = lock_this_account(client, 'cache_joint.txt')
+        if is_in_transaction:
+            return False
+    client.blocked_balance += Decimal(client.balance)
+    client.balance = Decimal(0)
+    client.in_transaction = True
+    client.save()       
+    return True    
+
+def realize_unlock(client, is_joint_account):
+    logging.debug(f'unlock_this_account: {client}')
+    if not client.balance: # se tiver balance significa que o cliente tem saldo disponível, então recebeu a transferência, então nao recebe desbloqueio
+        client.balance = client.blocked_balance
+    if is_joint_account:
+        end_transaction(client, 'cache_joint.txt')
+    client.blocked_balance = Decimal(0)
+    client.in_transaction = False
+    client.save()
+    return client
+
+def end_transaction(bank_client, cache_file):
+    cache_data = read_cache(bank_client.username, cache_file)
+    if cache_data is not None:
+        cache_data['in_transaction'] = False
+        write_cache(bank_client.username, cache_data, cache_file)
 
 # Função que solicita bloqueio de todos os bancos de dados de outros Bancos configurados.
 def lock_all_banks(bank_list, value, client, ip_bank_to_transfer):
     # bloqueando a conta deste banco
-    client.blocked_balance += Decimal(client.balance)
-    client.balance = 0
-    client.in_transaction = True
-    client.save()
+    is_in_transaction = realize_lock(client, False)
+    if is_in_transaction:
+        return False
     # bloqueando a conta conjunta deste banco
     client_joint_account_user_one = Client.objects.filter(user_one=client.username).first()
     if client_joint_account_user_one is not None:
-        client_joint_account_user_one.blocked_balance += Decimal(client_joint_account_user_one.balance)
-        client_joint_account_user_one.balance = 0
-        client_joint_account_user_one.in_transaction = True
-        client_joint_account_user_one.save()
+        is_in_transaction = realize_lock(client_joint_account_user_one, True)
+        if is_in_transaction:
+            return False
     client_joint_account_user_two = Client.objects.filter(user_two=client.username).first()
     if client_joint_account_user_two is not None:
-        client_joint_account_user_two.blocked_balance += Decimal(client_joint_account_user_two.balance)
-        client_joint_account_user_two.balance = 0
-        client_joint_account_user_two.in_transaction = True
-        client_joint_account_user_two.save()
+        is_in_transaction = realize_lock(client_joint_account_user_two, True)
+        if is_in_transaction:
+            return False
 
     accounts = {}
     for bank in bank_list:
@@ -57,23 +125,14 @@ def lock_all_banks(bank_list, value, client, ip_bank_to_transfer):
 
 # Solicita desbloqueio de todos os clientes de outros Bancos configurados.
 def unlock_all_banks(bank_list, client, ip_bank_to_transfer):
-    client.balance = client.blocked_balance
-    client.blocked_balance = Decimal(0)
-    client.in_transaction = False
-    client.save()
+    realize_unlock(client, False)
     # desbloqueando a conta conjunta deste banco
     client_joint_account_user_one = Client.objects.filter(user_one=client.username).first()
     if client_joint_account_user_one is not None:
-        client_joint_account_user_one.balance = client_joint_account_user_one.blocked_balance
-        client_joint_account_user_one.blocked_balance = Decimal(0)
-        client_joint_account_user_one.in_transaction = False
-        client_joint_account_user_one.save()
+        realize_unlock(client_joint_account_user_one, True)
     client_joint_account_user_two = Client.objects.filter(user_two=client.username).first()
     if client_joint_account_user_two is not None:
-        client_joint_account_user_two.balance = client_joint_account_user_two.blocked_balance
-        client_joint_account_user_two.blocked_balance = Decimal(0)
-        client_joint_account_user_two.in_transaction = False
-        client_joint_account_user_two.save()
+        realize_unlock(client_joint_account_user_one, True)
 
     for bank in bank_list:
         url = f'http://{bank.ip}:{bank.port}/transaction/unlock/'
@@ -86,6 +145,7 @@ def unlock_all_banks(bank_list, client, ip_bank_to_transfer):
 # Solicita subtração dos valores dos bancos que efetuarão a transferência.
 def subtract_balance_all_banks(bank_client, bank_list, banks_and_values_withdraw):
     for key, value in banks_and_values_withdraw.items():
+        logging.debug(f'banks_and_values_withdraw: {key}')
         if key == 'this':
             # subtrai inclusive desse banco atual se houver
             logging.debug(f'ta subtraindo aqui? {bank_client.blocked_balance}')
@@ -93,6 +153,7 @@ def subtract_balance_all_banks(bank_client, bank_list, banks_and_values_withdraw
             logging.debug(f'ta subtraindo aqui? {bank_client.blocked_balance}')
             bank_client.save()
         elif key.split('_')[0] == 'this': # se for uma conta conjunta neste banco
+            logging.debug('é uma conta conjunta neste banco')
             bank_client = Client.objects.get(username=key.split('_')[1])
             bank_client.blocked_balance -= Decimal(value)
             bank_client.save()
