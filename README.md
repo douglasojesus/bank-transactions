@@ -53,13 +53,18 @@ Este é um sistema para processamento de transações bancárias, utilizando Doc
 <p align="justify">No sistema, os bancos estão utilizando um protocolo personalizado baseado em requisições HTTP para comunicação entre si: API REST. A comunicação é feita baseada no formato JSON. Especificamente, o sistema utiliza uma abordagem de transações distribuídas inspirada no conceito de Two-Phase Commit (2PC) e Conservative Two-Phase Locking (CTPL), adaptada para ambientes distribuídos e multi-banco. </p>
 
 <p align="center">
-  <img src="docs/images/fluxogram.png" alt="Figura 1.">
-  Figura 1. Comunicação Interbancária usando API REST. 
+  <img src="docs/images/api_fluxogram.png" alt="Figura 1.">
+  Figura 1. Comunicação Interbancária usando API REST: métodos HTTP e estados. 
 </p>
 
 <p align="justify">A API REST permite que os bancos enviem e recebam requisições HTTP, garantindo uma comunicação padronizada e eficiente. O protocolo 2PC é implementado para assegurar a consistência e a atomicidade das transações, realizando operações em duas fases: prepare e commit. </p>
 
 <p align="justify">Na fase prepare, os bancos envolvidos verificam se podem concluir a transação, bloqueando os recursos necessários; na fase commit, a transação é confirmada e os recursos são efetivamente transferidos. Se houver algum problema na transação em algum dos passos, todos os bancos são abortados da operação.</p> 
+
+<p align="center">
+  <img src="docs/images/fluxogram.png" alt="Figura 2.">
+  Figura 2. Comunicação Interbancária usando API REST. 
+</p>
 
 <p align="justify">O CTPL é utilizado para gerenciar os bloqueios dos recursos, evitando conflitos e garantindo que as operações sejam realizadas de forma segura e ordenada. A implementação dessas técnicas está baseada nas funções de bloqueio e desbloqueio de contas, verificação de saldos e coordenadação de transferência de fundos entre os bancos, assegurando a integridade e a segurança das transações distribuídas.</p>
 
