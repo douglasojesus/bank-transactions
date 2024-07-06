@@ -360,12 +360,11 @@ def receive_in_this_account(client_to_receive, value_to_receive, commit=False, r
             bank_client.balance += Decimal(bank_client.blocked_balance)
             bank_client.blocked_balance = Decimal(0)
             bank_client.save()
-            logging.debug(f'commit- receive in this account. balance: {bank_client.balance}')
-            logging.debug(f'commit- receive in this account. blocked_balance: {bank_client.blocked_balance}')
             return 'COMMITTED'
 
         if rollback:
             bank_client.blocked_balance -= Decimal(value_to_receive)
+            bank_client.balance = bank_client.blocked_balance
             bank_client.save()
             return 'ROLLED BACK'
 
@@ -399,6 +398,7 @@ def receive(request):
 
             if rollback:
                 bank_client.blocked_balance -= Decimal(value_to_receive)
+                bank_client.balance = bank_client.blocked_balance
                 bank_client.save()
                 return JsonResponse({'status': 'ROLLED BACK'})
         

@@ -122,7 +122,6 @@ Desvantagens:
 
 Com base nas instruções passadas e no problema a ser resolvido, a junção dos algoritmos acima, com algumas modificações acrescidas, solucionaram o problema.
 
-
 ## Algoritmo está tratrando o problema na prática? A implementação do algoritmo está funcionamento corretamente?
 
 <p align="justify">A arquitetura do sistema emprega um modelo de bloqueio de saldo, onde valores são temporariamente bloqueados nas contas dos clientes para assegurar a consistência das transações. Quando um banco recebe uma requisição de bloqueio, ele verifica se o cliente está atualmente em uma transação. Caso não esteja, o saldo do cliente é transferido para um saldo bloqueado, impedindo outras operações até a conclusão da transação. Esse método garante que os fundos necessários para a transação estejam disponíveis e reservados.</p>
@@ -140,6 +139,44 @@ Com base nas instruções passadas e no problema a ser resolvido, a junção dos
 <p align="justify">Essas técnicas combinadas - transações atômicas, bloqueio de registros, verificação de estado via cache, e o protocolo de bloqueio em duas fases - constituem uma abordagem robusta para lidar com concorrência em sistemas distribuídos, permitindo que o sistema elaborado trate o problema na prática e funcione de acordo com o esperado. As técnicas asseguram que as transações sejam executadas de forma segura e consistente, mesmo em cenários de alta concorrência, minimizando o risco de inconsistências e garantindo a integridade dos dados dos clientes, que são fatores importantes na implementação de um sistema bancário.</p>
 
 # Tratamento da Confiabilidade
+
+## Quando um dos bancos perde a conexão, o sistema continua funcionando corretamente? E quando o banco retorna à conexão?
+
+<p align="justify">Na situação de instabilidade nos bancos, existem duas possibilidades abordadas quando o sistema está em execução: o banco ser desconectado e conectado antes ou depois de alguma transação e durante uma transação.</p>
+
+<p align="justify">Quando o banco é desconectado ou conectado antes ou depois de uma transação, o servidor coordenador verifica antes de fazer uma transação se o servidor (banco) está escutando. Se ele não tiver escutando quando um usuário tentar usar essa conta nesse banco, indisponível neste instante, será retornado que o banco está inativo. Quando o banco volta, é atualizado na interface e o usuário consegue novamente utilizá-lo para as transações.</p>
+
+<p align="justify">A outra situação é o banco cair durante uma transação. Quando isso ocorre, o servidor que caiu não responde uma das etapas, como a confirmação de commit, por exemplo. Nesse instante, a operação é abortada e todo o processo é desfeito, como o retorno para os saldos iniciais em todas as contas e desbloqueio de todos os bancos. Isso ocorre em qualquer etapa de algum dos algoritmos (Conservative Two-Phase Locking ou Two-Phase Commit) até que todos os bancos tenham confirmado o recebimento do valor. Se existir uma situação que, após o rollback, esse banco ainda não responder, o banco coordenador será avisado sobre essa situação, apresetando o erro para o usuário. Quando esse banco voltar, ele poderá fazer conexão com todos os outros bancos novamente.</p>
+
+<p align="justify">Para que o valores monetários não sumissem ou fossem duplicados, foi utilizado uma estratégia de estados para o saldo, durante as fases dos dois algoritmos citados acima.</p>
+
+### 1° Fase - Two Phase Locking (lock):
+
+- Saldo (balance) -> Saldo Bloqueado (blocked_balance) - Em transação (in_transaction).
+
+### 1° Fase - Two Phase Commit (init/prepare):
+
+- Saldo Bloqueado (blocked_balance) - Em transação (in_transaction).
+- Valor é acrescido ao blocked_balance do cliente do banco receptor.
+- Valor é subtraído dos blocked_balance das contas do cliente fornecedor.
+
+### 2° Fase - Two Phase Commit (commit):
+
+- Saldo Bloqueado (blocked_balance) - Em transação (in_transaction) -> Saldo (balance).
+- Valor é desbloqueado da conta do banco receptor.
+
+### 3° Fase - Two Phase Commit (rollback):
+
+- Saldo Bloqueado (blocked_balance) - Em transação (in_transaction).
+- Valor é descrescido do valor bloqueado da conta do banco receptor.
+- Saldo Bloqueado (blocked_balance) - Em transação (in_transaction) -> Saldo (balance).
+
+### 2° Fase - Two Phase Locking (unlock):
+
+- Saldo Bloqueado (blocked_balance) - Em transação (in_transaction) -> Saldo (balance).
+- Valor é desbloqueado das contas dos bancos fornecedores.
+
+Isso garante que se houver algum erro até a fase de desbloqueio, o saldo possivelmente com divergência estará bloqueado e não disponível para transferências ou saque.
 
 # Transação Concorrente
 
@@ -233,22 +270,3 @@ https://www.naukri.com/code360/library/conservative-2-phase-locking
 
 São usados dois algoritmos: o two-phase commit e o two-phase locking. Cada um tem 2 fases.
 
-### 1° Fase - Two Phase Locking:
-
-Saldo -> Saldo Bloqueado
-
-### 2° Fase - Two Phase Locking:
-
-### 1° Fase - Two Phase Commit:
-
-Saldo Bloqueado -> Em Transação
-
-### 2° Fase - Two Phase Commit:
-
-Em Transação -> Saldo Bloqueado
-
-### 3° Fase - Two Phase Commit:
-
-### 2° Fase - Two Phase Locking:
-
-Saldo Bloqueado -> Saldo
