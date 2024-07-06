@@ -176,13 +176,19 @@ Com base nas instruções passadas e no problema a ser resolvido, a junção dos
 - Saldo Bloqueado (blocked_balance) - Em transação (in_transaction) -> Saldo (balance).
 - Valor é desbloqueado das contas dos bancos fornecedores.
 
-Isso garante que se houver algum erro até a fase de desbloqueio, o saldo possivelmente com divergência estará bloqueado e não disponível para transferências ou saque.
+<p align="justify">Isso garante que se houver algum erro até a fase de desbloqueio, o saldo possivelmente com divergência estará bloqueado e não disponível para transferências ou saque.</p>
 
 # Transação Concorrente
 
 ## Pelo menos uma transação concorrente é realizada? Como foi tratado o caso em que mais de duas transações ocorrem no mesmo banco de forma concorrente? O saldo fica correto? Os clientes conseguem realizar as transações?
 
-# Conclusão
+<p align="justify">Sim. É possível testar a concorrência no sistema utilizando um bloco de espera dentro de um dos servidores. Isso permite que a mesma transação seja testada em outro dispositivo. Nessa situação, é utilizado um sistema de filas de escrita e leitura de uma memória cache, que permite bloquear uma conta no momento da transação. Um cliente consegue efetuar a transação e o outro recebe um erro no processo. Nesse caso, o saldo fica correto e apenas um cliente consegue realizar a transação.</p>
+
+<p align="justify">O uso uso do algoritmo CTPL garante que quando um registro é lido para atualização, ele é bloqueado para outras transações até que a transação atual seja concluída. Isso evita condições de corrida e inconsistências. Ademais, o algoritmo TPC é usado para garantir que um bloco de código seja executado como uma unidade atômica. Se qualquer operação falhar, toda a transação é revertida, mantendo a integridade dos dados. Funções como realize_lock() e realize_unlock() gerenciam o estado de bloqueio das contas e o saldo bloqueado, garantindo que uma conta em transação não possa iniciar outra transação até que a atual seja concluída. Essas estratégias gerenciam os casos em que mais de duas transações ocorrem no mesmo banco de forma concorrente.</p>
+
+<p align="justify">O saldo bloqueado (blocked_balance) é usado para garantir que os valores necessários para uma transação sejam reservados, enquanto o saldo disponível (balance) é atualizado apenas após a conclusão da transação. Funções como subtract_balance_all_banks() e return_to_initial_balance() garantem que os saldos sejam ajustados corretamente durante e após a transação.</p>
+
+<p align="justify">O código trata dos bloqueios e desbloqueios de forma eficiente para garantir que as transações sejam processadas corretamente e que os clientes sejam informados de quaisquer problemas, como falta de saldo ou erros de comunicação entre bancos. A resposta das views (JsonResponse) fornece feedback imediato sobre o estado da transação.</p>
 
 # Configuração Inicial e Uso do Docker
 
