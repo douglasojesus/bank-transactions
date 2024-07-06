@@ -102,8 +102,8 @@ Desvantagens:
 <p align="justify">Como, no nosso caso, os bancos registrados poderiam ser fixos para o consórcio, o conhecimento antecipado dos bancos foi algo simples de ser implementado, o que mitigou a desvantagem do uso desse algoritmo. Com isso, nesse projeto, foi utilizado o Conservative Two-Phase Locking, com alguns acréscimos para solução completa do problema proposto.</p>
 
 <p align="center">
-  <img src="docs/images/conservative_example.webp" alt="Figura 4.">
-  Figura 4. Two-Phase Commit - Abort State. 
+  <img src="docs/images/conservative-example.png" alt="Figura 3.">
+  Figura 3. Conservative Two-Phase Locking Example. 
 </p>
 
 <p align="justify">Outro algoritmo principal utilizado para solucionar as transações atômicas foi o Two-Phase Commit. Esse protocolo opera em dois estágios distintos: a fase de preparação (prepare phase) e a fase de commit (commit phase), podendo se estender para a fase de cancelamento (rollback phase). Na fase de preparação, o coordenador de transação envia uma mensagem de "prepare" para todos os participantes, solicitando que se preparem para commit a transação. Cada participante então responde com uma mensagem de "commit" se estiver pronto para commit (Figura 3), ou "abort" se encontrar algum problema que impeça o commit (Figura 4). Esta fase assegura que todos os participantes concordem em prosseguir ou abortar a transação. Caso algum participante vote em abortar, todos os processos até este momento são desfeitos e todos os bancos são desbloqueados, prevenindo inconsistências entre os bancos de dados envolvidos. </p>
@@ -111,13 +111,13 @@ Desvantagens:
 <p align="justify">Então, o algoritmo de Two-Phase Locking (2PL) conservador é um método utilizado para controlar o acesso concorrente aos recursos em um sistema distribuído, garantindo que todas as operações que necessitam de bloqueios sejam obtidas antes do início da execução da transação. Este algoritmo é projetado para evitar deadlocks ao garantir que nenhuma transação comece até que todos os bloqueios necessários estejam garantidos. Já o Two-Phase Commit (2PC) é um protocolo utilizado para garantir a atomicidade das transações distribuídas, coordenando o compromisso de uma transação entre todos os participantes para garantir que ou todos os participantes confirmem a transação ou todos façam o rollback.</p>
 
 <p align="center">
-  <img src="docs/images/commit_example.webp" alt="Figura 3.">
-  Figura 3. Two-Phase Commit - Commit State. 
+  <img src="docs/images/commit_example.webp" alt="Figura 4.">
+  Figura 4. Two-Phase Commit - Commit State. 
 </p>
 
 <p align="center">
-  <img src="docs/images/abort_example.webp" alt="Figura 4.">
-  Figura 4. Two-Phase Commit - Abort State. 
+  <img src="docs/images/abort_example.webp" alt="Figura 5.">
+  Figura 5. Two-Phase Commit - Abort State. 
 </p>
 
 Com base nas instruções passadas e no problema a ser resolvido, a junção dos algoritmos acima, com algumas modificações acrescidas, solucionaram o problema.
