@@ -249,7 +249,6 @@ docker ps -a
 
 # Bibliografia
 
-Bibliografia:
-https://www.imperial.ac.uk/media/imperial-college/faculty-of-engineering/computing/public/1617-ug-projects/David-Pollak---Reasoning-about-Two-phase-Locking-Concurrency-Control.pdf
-https://www.naukri.com/code360/library/conservative-2-phase-locking
+POLLAK, David. Reasoning about Two-phase Locking Concurrency Control. Disponível em: https://www.imperial.ac.uk/media/imperial-college/faculty-of-engineering/computing/public/1617-ug-projects/David-Pollak---Reasoning-about-Two-phase-Locking-Concurrency-Control.pdf. Acesso em: 5 jul. 2024.
 
+NAUKRI. Conservative 2-phase locking. Disponível em: https://www.naukri.com/code360/library/conservative-2-phase-locking. Acesso em: 5 jul. 2024.
