@@ -72,17 +72,58 @@ Este é um sistema para processamento de transações bancárias, utilizando Doc
 
 ## Como tratou a concorrência em um único servidor, quando chegam mais de um pedido de transação a um único servidor?
 
-A sincronização de transações em um único servidor que atende múltiplos pedidos simultâneos é um desafio crítico em sistemas de bancos de dados. No contexto do problema fornecido, a concorrência foi tratada utilizando-se várias técnicas, principalmente as transações atômicas e o bloqueio de registros, para assegurar a consistência e a integridade dos dados.
+<p align="justify">A sincronização de transações em um único servidor que atende múltiplos pedidos simultâneos é um desafio crítico em sistemas de bancos de dados. No contexto do problema fornecido, a concorrência foi tratada utilizando-se várias técnicas, principalmente as transações atômicas e o bloqueio de registros, para assegurar a consistência e a integridade dos dados.</p>
 
-Com a transação atômica implementada, há a garantia que o bloco de código dentro da transação seja executado completamente ou não seja executado de forma alguma. Em caso de falha em qualquer ponto dentro da transação, todas as operações realizadas até aquele ponto são revertidas, garantindo assim a atomicidade da transação. Não apenas no banco coordenador, mas também nos bancos que fazem parte da transação. Além disso, o método select_for_update() é usado para bloquear os registros de clientes enquanto a transação está em andamento. Este bloqueio impede que outros processos modifiquem esses registros até que a transação seja concluída, prevenindo condições de corrida.
+<p align="justify">Com a transação atômica implementada, há a garantia que o bloco de código dentro da transação seja executado completamente ou não seja executado de forma alguma. Em caso de falha em qualquer ponto dentro da transação, todas as operações realizadas até aquele ponto são revertidas, garantindo assim a atomicidade da transação. Não apenas no banco coordenador, mas também nos bancos que fazem parte da transação. Além disso, o método select_for_update() é usado para bloquear os registros de clientes enquanto a transação está em andamento. Este bloqueio impede que outros processos modifiquem esses registros até que a transação seja concluída, prevenindo condições de corrida.</p>
 
-No caso de um único servidor, é possível que clientes diferentes efetuem transações no mesmo instante. O servidor Django utilizado permite o acesso assíncrono de requisições. Para isso, é necessário que os clientes se autentiquem e realizem as transações. 
+<p align="justify">No caso de um único servidor, é possível que clientes diferentes efetuem transações no mesmo instante. O servidor Django utilizado permite o acesso assíncrono de requisições. Para isso, é necessário que os clientes se autentiquem e realizem as transações. </p>
 
-Por outro lado, se em uma única conta há tentativa de mais de duas transações ao mesmo tempo, alguma das transações é bloqueada. Isso acontece comumente em contas conjuntas, quando algum cliente A tenta efetuar uma transação com a conta AB e o cliente B também, no mesmo instante. Quando isso ocorre, uma das transações é bloqueada devido ao bloqueio iniciado pela primeira transação. Para isso, é utilizado uma memória cache.
+<p align="justify">Por outro lado, se em uma única conta há tentativa de mais de duas transações ao mesmo tempo, alguma das transações é bloqueada. Isso acontece comumente em contas conjuntas, quando algum cliente A tenta efetuar uma transação com a conta AB e o cliente B também, no mesmo instante. Quando isso ocorre, uma das transações é bloqueada devido ao bloqueio iniciado pela primeira transação. Para isso, é utilizado uma memória cache. A função lock_this_account() lê e escreve estados de transação no cache, permitindo uma verificação rápida do estado da transação de um cliente. Isso reduz a necessidade de operações de banco de dados frequentes, melhorando a performance em cenários de alta concorrência.</p>
+
+<p align="justify">No contexto das operações de bloqueio e desbloqueio de saldos de clientes, o código assegura que apenas um processo possa modificar o saldo bloqueado de um cliente por vez. O método realize_lock() verifica se o cliente já está envolvido em outra transação (in_transaction). Se estiver, a operação é abortada. Caso contrário, o saldo do cliente é bloqueado (transferido para blocked_balance), e o campo in_transaction é marcado como True, sinalizando que uma transação está em andamento. Esse mecanismo evita que múltiplas transações concorrentes alterem o saldo do cliente simultaneamente.</p>
+
+<p align="justify">A implementação das operações de transferência entre bancos (na função transfer()) ilustra um protocolo de bloqueio em duas fases (Two-Phase Locking - 2PL), a ser detalhado no próximo tópico. Primeiro, todas as contas envolvidas são bloqueadas para evitar condições de corrida, e somente após garantir que todas as contas foram corretamente bloqueadas é que a transferência é realizada. Caso ocorra qualquer falha durante o processo de bloqueio, todos os bloqueios são revertidos (rollback), garantindo que o sistema permaneça em um estado consistente.</p>
 
 # Algoritmo da Concorrência Distribuída
 
-## Empregação
+## O algoritmo da concorrência distribuída está teoricamente bem empregado? Qual algoritmo foi utilizado? Está correto para a solução?
+
+<p align="justify">Em sistemas distribuídos, a concorrência é essencial para permitir que múltiplas transações sejam processadas simultaneamente. No entanto, isso pode levar a conflitos, inconsistências e problemas como deadlocks (onde duas ou mais transações esperam indefinidamente por recursos bloqueados entre si). Para essas situações, há a necessidade de um protocolo que possa gerenciar a concorrência garantindo a serializabilidade dos conflitos (evitando que transações interfiram entre si de maneiras que resultem em inconsistências) e prevenindo deadlocks.</p>
+
+<p align="justify">Um protocolo que resolve o problema do deadlock é uma variação do Two-Phase Locking: conservative. Na sua primeira fase, antes de executar qualquer operação (leitura ou escrita), uma transação deve solicitar e adquirir todos os bloqueios de que necessitará durante sua execução. Na segunda fase, após adquirir todos os bloqueios necessários, a transação pode começar a liberar bloqueios, mas não pode solicitar novos bloqueios.</p>
+
+Vantagens:
+- Sem Deadlocks: Como todas as transações adquirem todos os bloqueios necessários antecipadamente, elimina-se a possibilidade de deadlocks.
+
+Desvantagens:
+- Menor Concorrência: A exigência de adquirir todos os bloqueios antecipadamente pode levar a um menor grau de concorrência.
+- Necessidade de Conhecimento Antecipado: As transações precisam saber de antemão todos os recursos de que precisarão, o que pode ser impraticável em alguns cenários.
+
+<p align="justify">Como, no nosso caso, os bancos registrados poderiam ser fixos para o consórcio, o conhecimento antecipado dos bancos foi algo simples de ser implementado, o que mitigou a desvantagem do uso desse algoritmo. Com isso, nesse projeto, foi utilizado o Conservative Two-Phase Locking, com alguns acréscimos para solução completa do problema proposto.</p>
+
+<p align="center">
+  <img src="docs/images/conservative_example.webp" alt="Figura 4.">
+  Figura 4. Two-Phase Commit - Abort State. 
+</p>
+
+<p align="justify">Outro algoritmo principal utilizado para solucionar as transações atômicas foi o Two-Phase Commit. Esse protocolo opera em dois estágios distintos: a fase de preparação (prepare phase) e a fase de commit (commit phase), podendo se estender para a fase de cancelamento (rollback phase). Na fase de preparação, o coordenador de transação envia uma mensagem de "prepare" para todos os participantes, solicitando que se preparem para commit a transação. Cada participante então responde com uma mensagem de "commit" se estiver pronto para commit (Figura 3), ou "abort" se encontrar algum problema que impeça o commit (Figura 4). Esta fase assegura que todos os participantes concordem em prosseguir ou abortar a transação. Caso algum participante vote em abortar, todos os processos até este momento são desfeitos e todos os bancos são desbloqueados, prevenindo inconsistências entre os bancos de dados envolvidos. </p>
+
+<p align="justify">Então, o algoritmo de Two-Phase Locking (2PL) conservador é um método utilizado para controlar o acesso concorrente aos recursos em um sistema distribuído, garantindo que todas as operações que necessitam de bloqueios sejam obtidas antes do início da execução da transação. Este algoritmo é projetado para evitar deadlocks ao garantir que nenhuma transação comece até que todos os bloqueios necessários estejam garantidos. Já o Two-Phase Commit (2PC) é um protocolo utilizado para garantir a atomicidade das transações distribuídas, coordenando o compromisso de uma transação entre todos os participantes para garantir que ou todos os participantes confirmem a transação ou todos façam o rollback.</p>
+
+<p align="center">
+  <img src="docs/images/commit_example.webp" alt="Figura 3.">
+  Figura 3. Two-Phase Commit - Commit State. 
+</p>
+
+<p align="center">
+  <img src="docs/images/abort_example.webp" alt="Figura 4.">
+  Figura 4. Two-Phase Commit - Abort State. 
+</p>
+
+Com base nas instruções passadas e no problema a ser resolvido, a junção dos algoritmos acima, com algumas modificações acrescidas, solucionaram o problema.
+
+
+## Algoritmo está tratrando o problema na prática? A implementação do algoritmo está funcionamento corretamente?
 
 <p align="justify">A arquitetura do sistema emprega um modelo de bloqueio de saldo, onde valores são temporariamente bloqueados nas contas dos clientes para assegurar a consistência das transações. Quando um banco recebe uma requisição de bloqueio, ele verifica se o cliente está atualmente em uma transação. Caso não esteja, o saldo do cliente é transferido para um saldo bloqueado, impedindo outras operações até a conclusão da transação. Esse método garante que os fundos necessários para a transação estejam disponíveis e reservados.</p>
 
@@ -96,7 +137,7 @@ Por outro lado, se em uma única conta há tentativa de mais de duas transaçõe
 
 <p align="justify">Ao final da transação, se todos os passos forem concluídos com sucesso, os valores são efetivamente subtraídos dos saldos bloqueados dos bancos de origem e adicionados ao saldo do cliente no banco destinatário. Em caso de falhas, as funções de rollback garantem que todos os valores sejam restaurados aos seus estados originais, preservando a integridade do sistema.</p>
 
-## Funcionamento
+<p align="justify">Essas técnicas combinadas - transações atômicas, bloqueio de registros, verificação de estado via cache, e o protocolo de bloqueio em duas fases - constituem uma abordagem robusta para lidar com concorrência em sistemas distribuídos, permitindo que o sistema elaborado trate o problema na prática e funcione de acordo com o esperado. As técnicas asseguram que as transações sejam executadas de forma segura e consistente, mesmo em cenários de alta concorrência, minimizando o risco de inconsistências e garantindo a integridade dos dados dos clientes, que são fatores importantes na implementação de um sistema bancário.</p>
 
 # Tratamento da Confiabilidade
 
