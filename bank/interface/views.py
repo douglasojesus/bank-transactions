@@ -111,6 +111,11 @@ def transaction_page(request):
                     banks_and_values_withdraw[nome_banco] = key_value_buffer
 
                     # Verifica se o nome do banco é válido
+                    logging.debug('name bank: ' + name_bank)
+                    banks = Bank.objects.all()
+                    for bank in banks:
+                        logging.debug(bank)
+
                     try:
                         bank = Bank.objects.get(name=name_bank)
                     except Bank.DoesNotExist:

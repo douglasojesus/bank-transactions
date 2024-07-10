@@ -34,7 +34,6 @@ def lock_this_account(bank_client, cache_file):
         else:
             if bank_client.in_transaction:
                 return True
-            bank_client.in_transaction = True
             bank_client.save()
             bank_client_cache = {'in_transaction': True}
             write_cache(bank_client.username, bank_client_cache, cache_file)
@@ -49,16 +48,20 @@ def lock_this_account(bank_client, cache_file):
 def realize_lock(client, is_joint_account):
     logging.debug(f'lock_this_account: {client}')
     if client.in_transaction:
-        return False
+        return True
     if is_joint_account:
+        client.blocked_balance += Decimal(client.balance)
+        client.balance = Decimal(0)
+        client.save()   
         is_in_transaction = lock_this_account(client, 'cache_joint.txt')
         if is_in_transaction:
-            return False
+            return True
     client.blocked_balance += Decimal(client.balance)
     client.balance = Decimal(0)
     client.in_transaction = True
-    client.save()       
-    return True    
+    client.save()
+    logging.debug('to retornando true aqui')
+    return False    
 
 def realize_unlock(client, is_joint_account):
     logging.debug(f'unlock_this_account: {client}')
@@ -80,19 +83,24 @@ def end_transaction(bank_client, cache_file):
 # Função que solicita bloqueio de todos os bancos de dados de outros Bancos configurados.
 def lock_all_banks(bank_list, value, client, ip_bank_to_transfer):
     # bloqueando a conta deste banco
+    logging.debug(f'esse cliente ta em transação? {client.in_transaction}')
     is_in_transaction = realize_lock(client, False)
     if is_in_transaction:
+        logging.debug(f'ESSE BANCO IS NOT NONE - DEU FALSE AQUI')
         return False
+    
     # bloqueando a conta conjunta deste banco
     client_joint_account_user_one = Client.objects.filter(user_one=client.username).first()
     if client_joint_account_user_one is not None:
         is_in_transaction = realize_lock(client_joint_account_user_one, True)
         if is_in_transaction:
+            logging.debug(f'client_joint_account_user_ONE IS NOT NONE - DEU FALSE AQUI')
             return False
     client_joint_account_user_two = Client.objects.filter(user_two=client.username).first()
     if client_joint_account_user_two is not None:
         is_in_transaction = realize_lock(client_joint_account_user_two, True)
         if is_in_transaction:
+            logging.debug(f'client_joint_account_user_two IS NOT NONE - DEU FALSE AQUI')
             return False
 
     accounts = {}
@@ -103,7 +111,9 @@ def lock_all_banks(bank_list, value, client, ip_bank_to_transfer):
             logging.debug(f"{url}")
             try:
                 response = requests.post(url, data={'value': value, 'client': client.username}, timeout=5)
+                logging.debug(f"respostas do lock: {response}")
                 if response.status_code != 200 or response.json().get('status') != 'LOCKED':
+                    logging.debug(f"{response.status_code} - {response.json().get('status')} - DEU FALSE AQUI")
                     return False
                 accounts[bank.name] = response.json().get('blocked_balance') 
                 client_ja_one = response.json().get('client_ja_one')

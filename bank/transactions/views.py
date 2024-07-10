@@ -51,6 +51,7 @@ def subtract(request):
             with transaction.atomic():
                 bank_client = Client.objects.select_for_update().get(username=client_to_subtract)
                 bank_client.blocked_balance -= Decimal(value_to_subtract)
+                logging.debug(f'{bank_client.username}: {bank_client.blocked_balance} - saldo: {bank_client.balance}')
                 bank_client.save()
                 return JsonResponse({'status': 'COMMITED'})
         except:
@@ -70,14 +71,14 @@ def lock(request):
         value_to_lock = request.POST.get('value')
         try:
             bank_client = Client.objects.select_for_update().get(username=client_to_lock)
-            if not realize_lock(bank_client, False):
+            if realize_lock(bank_client, False):
                 return JsonResponse({'status': 'ABORT', 'message': 'IN_TRANSACTION'}, status=404)
             
             # Verificar se o cliente tem uma conta conjunta
             client_joint_account_user_one = Client.objects.filter(user_one=client_to_lock).first()
             client_joint_account_user_one_bb = None
             if client_joint_account_user_one is not None:
-                if not realize_lock(client_joint_account_user_one, True):
+                if realize_lock(client_joint_account_user_one, True):
                     return JsonResponse({'status': 'ABORT', 'message': 'IN_TRANSACTION'}, status=404)
                 client_joint_account_user_one_bb = client_joint_account_user_one.blocked_balance
                 client_joint_account_user_one = client_joint_account_user_one.username
@@ -85,7 +86,7 @@ def lock(request):
             client_joint_account_user_two = Client.objects.filter(user_two=client_to_lock).first()
             client_joint_account_user_two_bb = None
             if client_joint_account_user_two is not None:
-                if not realize_lock(client_joint_account_user_two, True):
+                if realize_lock(client_joint_account_user_two, True):
                     return JsonResponse({'status': 'ABORT', 'message': 'IN_TRANSACTION'}, status=404)
                 client_joint_account_user_two_bb = client_joint_account_user_two.blocked_balance
                 client_joint_account_user_two = client_joint_account_user_two.username
@@ -98,6 +99,8 @@ def lock(request):
                                  'client_ja_two_bb': client_joint_account_user_two_bb,
                                 }
 
+            logging.debug('DENTRO DO LOCKKKKKKK')
+            logging.debug(json_response)
             
             return JsonResponse(json_response)
         except Client.DoesNotExist:
@@ -196,11 +199,15 @@ def transfer(request, banks_and_values_withdraw, value_to_transfer, bank_to_tran
             
             bank_client = Client.objects.get(username=request.user)
 
+            logging.debug(f"{bank_client} - b: {bank_client.blocked_balance} - s: {bank_client.balance}")
+
             ## Inicia transação do Two Phase Locking, bloqueando todas as contas.
             is_in_transaction = lock_this_account(bank_client, 'cache.txt')
             if is_in_transaction:
                 messages.error(request, "Cliente está em transação no momento. Aguarde.")
                 return redirect('transaction_page')
+            
+            logging.debug(f"{bank_client} - b: {bank_client.blocked_balance} - s: {bank_client.balance}")
             
             if 'this' in client_to_transfer:
                 client_to_transfer = client_to_transfer[5:]
@@ -213,6 +220,8 @@ def transfer(request, banks_and_values_withdraw, value_to_transfer, bank_to_tran
                 messages.error(request, "A soma dos valores a serem transferidos do banco não é igual ao valor a ser transferido total.")
                 return redirect('transaction_page')
             
+            logging.debug(f"{bank_client} - b: {bank_client.blocked_balance} - s: {bank_client.balance}")
+            
             # Verifica se a transferência está acontecendo do bancoX para o bancoX
             if (bank_to_transfer[2] in banks_and_values_withdraw) and request.user.username == client_to_transfer:
                 messages.error(request, f"O cliente {client_to_transfer} do {bank_to_transfer[2]} não pode transferir para ele mesmo (mesma conta e mesmo banco).")
@@ -220,9 +229,17 @@ def transfer(request, banks_and_values_withdraw, value_to_transfer, bank_to_tran
             
             #{ip: saldo_bloqueado}
             balances_from_other_banks = lock_all_banks(banks, value_to_transfer, bank_client, bank_to_transfer[0]) #accounts[bank.ip] = response.json.get('client_object').blocked_balance
-            balances_from_other_banks = bank_balance_map
+            
+            logging.debug(f'lock all banks? ------ {balances_from_other_banks}')
+
+            if balances_from_other_banks:
+                balances_from_other_banks = bank_balance_map
+
+            
 
             logging.debug(f'lock all banks? ------ {balances_from_other_banks}')
+
+            logging.debug(f"{bank_client} - b: {bank_client.blocked_balance} - s: {bank_client.balance}")
 
             if not balances_from_other_banks:
                 messages.error(request, "Falha ao bloquear todos os bancos para a transação. Tente novamente em alguns segundos.")
@@ -230,10 +247,13 @@ def transfer(request, banks_and_values_withdraw, value_to_transfer, bank_to_tran
                 return redirect('transaction_page')
             
             time.sleep(5)
-            
+            logging.debug(f"{bank_client} - b: {bank_client.blocked_balance} - s: {bank_client.balance}")
             # Verifica se o cliente possui saldo nos bancos
             if 'this' in banks_and_values_withdraw:
+                logging.debug(f"{bank_client} {banks_and_values_withdraw}")
+                logging.debug(f"{bank_client.blocked_balance} {banks_and_values_withdraw['this']}")
                 if bank_client.blocked_balance < Decimal(banks_and_values_withdraw['this']):
+                    end_transaction(bank_client, 'cache.txt')
                     messages.error(request, "Não há saldo suficiente para efetuar essa transação.")
                     return redirect('transaction_page')
 
@@ -360,11 +380,12 @@ def receive_in_this_account(client_to_receive, value_to_receive, commit=False, r
             bank_client.balance += Decimal(bank_client.blocked_balance)
             bank_client.blocked_balance = Decimal(0)
             bank_client.save()
+            logging.debug(f'commit- receive in this account. balance: {bank_client.balance}')
+            logging.debug(f'commit- receive in this account. blocked_balance: {bank_client.blocked_balance}')
             return 'COMMITTED'
 
         if rollback:
             bank_client.blocked_balance -= Decimal(value_to_receive)
-            bank_client.balance = bank_client.blocked_balance
             bank_client.save()
             return 'ROLLED BACK'
 
@@ -398,7 +419,6 @@ def receive(request):
 
             if rollback:
                 bank_client.blocked_balance -= Decimal(value_to_receive)
-                bank_client.balance = bank_client.blocked_balance
                 bank_client.save()
                 return JsonResponse({'status': 'ROLLED BACK'})
         

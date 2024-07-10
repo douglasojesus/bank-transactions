@@ -10,7 +10,7 @@ services:
       - POSTGRES_PASSWORD=123456
       - POSTGRES_DB=bank_transaction_db_1
     ports:
-      - "5432:5432"
+      - "6543:6543"
     networks:
       - projeto-network
 
@@ -23,8 +23,7 @@ services:
       - ./bank:/bank
       - ./wait-for-it.sh:/wait-for-it.sh 
     command: >
-      sh -c "./wait-for-it.sh db1:5432 -- 
-             python manage.py migrate && 
+      sh -c "python manage.py migrate && 
              python manage.py runserver 0.0.0.0:8000"
     environment:
       - DB_HOST=db1
@@ -45,7 +44,7 @@ services:
       - POSTGRES_PASSWORD=123456
       - POSTGRES_DB=bank_transaction_db_2
     ports:
-      - "5433:5433"
+      - "6544:6544"
     networks:
       - projeto-network
 
@@ -58,7 +57,7 @@ services:
       - ./bank:/bank
       - ./wait-for-it.sh:/wait-for-it.sh 
     command: >
-      sh -c "./wait-for-it.sh db2:5433 -- 
+      sh -c "
              python manage.py migrate && 
              python manage.py runserver 0.0.0.0:8001"
     environment:
@@ -80,7 +79,7 @@ services:
       - POSTGRES_PASSWORD=123456
       - POSTGRES_DB=bank_transaction_db_3
     ports:
-      - "5434:5434"
+      - "6545:6545"
     networks:
       - projeto-network
 
@@ -93,7 +92,7 @@ services:
       - ./bank:/bank
       - ./wait-for-it.sh:/wait-for-it.sh 
     command: >
-      sh -c "./wait-for-it.sh db3:5434 -- 
+      sh -c "
              python manage.py migrate && 
              python manage.py runserver 0.0.0.0:8002"
     environment:
